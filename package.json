@@ -1,0 +1,20 @@
+{
+  "name": "nx-dashboard-agent",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@module-federation/enhanced": "^2.9.2",
+    "@nx/angular": "^23.3.0",
+    "@nx/devkit": "^23.3.0",
+    "@nx/js": "^23.3.0",
+    "@nx/nest": "^23.3.0",
+    "@nx/react": "^23.3.0",
+    "@nx/web": "^23.3.0",
+    "@types/bun": "latest",
+    "nx": "^23.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "^7"
+  }
+}
