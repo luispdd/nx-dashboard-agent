@@ -10,6 +10,55 @@
   ],
   "targets": {
     "build": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {
+        "cacheExternalArtifacts": true,
+        "tsConfig": "apps/dashboard-shell/tsconfig.federation.json"
+      },
+      "configurations": {
+        "production": {
+          "target": "dashboard-shell:esbuild:production"
+        },
+        "development": {
+          "target": "dashboard-shell:esbuild:development",
+          "dev": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {
+        "target": "dashboard-shell:serve-original:development",
+        "tsConfig": "apps/dashboard-shell/tsconfig.federation.json",
+        "rebuildDelay": 500,
+        "cacheExternalArtifacts": true,
+        "dev": true,
+        "devServer": true,
+        "port": 0
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {
+        "watch": false,
+        "buildTarget": "dashboard-shell:esbuild"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "dashboard-shell:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/dashboard-shell/browser",
+        "spa": true
+      }
+    },
+    "esbuild": {
       "executor": "@angular/build:application",
       "outputs": [
         "{options.outputPath}"
@@ -28,6 +77,9 @@
         ],
         "styles": [
           "apps/dashboard-shell/src/styles.scss"
+        ],
+        "polyfills": [
+          "es-module-shims"
         ]
       },
       "configurations": {
@@ -53,36 +105,20 @@
         }
       }
     },
-    "serve": {
+    "serve-original": {
       "continuous": true,
       "executor": "@angular/build:dev-server",
       "defaultConfiguration": "development",
       "configurations": {
         "production": {
-          "buildTarget": "dashboard-shell:build:production"
+          "buildTarget": "dashboard-shell:esbuild:production"
         },
         "development": {
-          "buildTarget": "dashboard-shell:build:development"
+          "buildTarget": "dashboard-shell:esbuild:development"
         }
-      }
-    },
-    "lint": {
-      "executor": "@nx/eslint:lint"
-    },
-    "test": {
-      "executor": "@angular/build:unit-test",
+      },
       "options": {
-        "watch": false
-      }
-    },
-    "serve-static": {
-      "continuous": true,
-      "executor": "@nx/web:file-server",
-      "options": {
-        "buildTarget": "dashboard-shell:build",
-        "port": 4200,
-        "staticFilePath": "dist/apps/dashboard-shell/browser",
-        "spa": true
+        "port": 4200
       }
     }
   }

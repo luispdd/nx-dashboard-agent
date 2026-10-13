@@ -15,7 +15,7 @@ Milestone M0 establishes the Nx monorepo foundations and de-risks the three core
 
 ### New Capabilities
 - `workspace-bootstrap`: Nx monorepo project structure, module boundary lint rules, Vitest unit runner configuration, and Playwright E2E runner setup.
-- `spike-module-federation`: Runtime Native Federation bridge enabling the Angular 22 shell to dynamically load the React chat remote and pass dashboard context.
+- `spike-native-federation`: Runtime Native Federation bridge enabling the Angular 22 shell to dynamically load the React chat remote and pass dashboard context.
 - `spike-python-in-nx`: Python FastAPI project orchestration inside Nx using `uv run` commands for testing, linting, and running.
 - `spike-local-llm-connectivity`: FastAPI integration with the local Unsloth OpenAI-compatible API on port 8888, verifying authentication, connectivity, and model inference.
 

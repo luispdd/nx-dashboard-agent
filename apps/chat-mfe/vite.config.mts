@@ -8,24 +8,34 @@ export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/apps/chat-mfe',
   server:{
-    port: 4200,
+    port: 4204,
     host: 'localhost',
+    cors: true,
   },
   preview:{
-    port: 4300,
+    port: 4204,
     host: 'localhost',
+    cors: true,
   },
   plugins: [react(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
-  // Uncomment this if you are using workers.
-  // worker: {
-  //   plugins: () => [ nxViteTsPaths() ],
-  // },
   build: {
     outDir: '../../dist/apps/chat-mfe',
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {
       transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      preserveEntrySignatures: 'exports-only',
+      input: {
+        main: './index.html',
+        remoteEntry: './src/remote-entry.tsx',
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          return chunkInfo.name === 'remoteEntry' ? 'remoteEntry.js' : 'assets/[name]-[hash].js';
+        },
+      },
     },
   },
   test: {

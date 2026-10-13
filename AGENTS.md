@@ -21,7 +21,7 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **No** free-form SQL tool for the agent. Typed, narrow tools only.
 - The agent service never opens the database directly; it calls the NestJS API.
 - Anomaly statistics are computed deterministically in Python; the LLM only interprets results.
-- The LLM provider is configuration (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`), never hardcoded. Default: `http://127.0.0.1:8888/api`, `unsloth/Qwen3.5-4B-GGUF:UD-Q4_K_XL`.
+- The LLM provider is configuration (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`), never hardcoded. Default: `http://127.0.0.1:8888/v1`, `unsloth/Qwen3.5-4B-GGUF`.
 - OpenAPI specs are the contract between services; clients are generated, never hand-written.
 - **Microfrontends:** Angular host (`dashboard-shell`) + React remote (`chat-mfe`) via Native Federation (browser ESM and Import Maps).
 - **Styling:** Tailwind CSS + SCSS across all microfrontends.
@@ -50,6 +50,12 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **Webpack in ESM Workspaces**: If root `package.json` contains `"type": "module"`, any Webpack configuration using CommonJS must be named `webpack.config.cjs`. A `.js` file will break `@nx/webpack/plugin` graph inference with `require is not defined in ES module scope`.
 - **Angular Vitest Version Lock**: Angular's `@angular/build:unit-test` executor strictly requires `vitest@^4.0.8`. Do not install Vitest 5+ in this workspace.
 - **Vitest Non-Watch Execution**: In `nx.json`, ensure `@nx/vitest` plugin uses `"testMode": "run"` instead of `"watch"` so CI and batch tasks (`nx run-many -t test`) exit cleanly.
+- **NestJS DI under Vitest**: Vitest does not emit TypeScript `design:paramtypes` metadata by default. Add explicit `@Inject(ServiceName)` to controller constructor parameters (e.g. `@Inject(AppService) private readonly appService: AppService`) to prevent undefined injection in tests without extra compiler plugins.
+- **Root tsconfig & DOM Lib**: Project configs must extend `tsconfig.base.json`. Keep root `tsconfig.json` clean (no `verbatimModuleSyntax` or `bun` types). Ensure `tsconfig.base.json` includes `"dom"` and `"dom.iterable"` in `compilerOptions.lib` for Angular ApplicationBuilder.
+- **Vite Remote Entry Rollup Signatures**: When bundling React MFE entries (`apps/chat-mfe`), specify `preserveEntrySignatures: 'exports-only'` in `build.rollupOptions` so Rollup does not strip entry exports (`mount`, `Chat`) from `remoteEntry.js`.
+- **Unsloth OpenAI Endpoint Root**: Unsloth mounts OpenAI-compatible routes (`/chat/completions`, `/models`) at `/v1`, not `/api` (`/api` is the internal web UI route and returns 404/405). The client normalizes `/api` suffixes to `/v1`.
+- **Pytest Auto-Discovery**: Prefix helper/probe functions in non-test or imported modules with `probe_` or `check_`, never `test_`, to avoid Pytest collecting them as failing test cases.
+- **OpenSpec CLI Execution**: Run `openspec <cmd>` directly; never prefix with `bunx` or `npx`.
 - **Python Project Target Delegation**: Configure `apps/agent-service/project.json` with `nx:run-commands` wrapping `uv run <command>` (e.g. `uv run uvicorn`, `uv run pytest`, `uv run ruff`).
 
 ## Commands

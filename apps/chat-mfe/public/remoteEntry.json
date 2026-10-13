@@ -1,0 +1,11 @@
+{
+  "$version": "v4",
+  "name": "chat-mfe",
+  "shared": [],
+  "exposes": [
+    {
+      "key": "./Chat",
+      "outFileName": "remoteEntry.js"
+    }
+  ]
+}

@@ -42,7 +42,7 @@ __screenshots__/
 iot-dashboard-agent-plan.md
 vitest.config.*.timestamp*
 .vitest
-
+apps/agent-service/.env
 .angular
 
 vite.config.*.timestamp*

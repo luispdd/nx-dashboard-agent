@@ -1,0 +1,11 @@
+<div class="chat-wrapper">
+  @if (status() === 'loading') {
+    <div class="chat-loading">Connecting to chat microfrontend...</div>
+  }
+  @if (status() === 'error') {
+    <div class="chat-error">
+      Failed to load chat microfrontend: {{ errorMessage() }}
+    </div>
+  }
+  <div #chatContainer class="chat-container"></div>
+</div>

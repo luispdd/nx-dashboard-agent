@@ -1,0 +1,19 @@
+.chat-wrapper {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #f8fafc;
+}
+
+.chat-loading {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.chat-error {
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.chat-container {
+  min-height: 200px;
+}
