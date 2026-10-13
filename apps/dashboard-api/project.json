@@ -3,7 +3,10 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/dashboard-api/src",
   "projectType": "application",
-  "tags": [],
+  "tags": [
+    "type:app",
+    "scope:dashboard"
+  ],
   "targets": {
     "prune-lockfile": {
       "dependsOn": [

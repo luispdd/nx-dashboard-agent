@@ -5,12 +5,17 @@
     "target": "ESNext",
     "module": "Preserve",
     "lib": [
-      "ESNext"
+      "ESNext",
+      "dom",
+      "dom.iterable"
     ],
     "skipLibCheck": true,
     "strict": true,
     "paths": {
       "shared-mfe-context": [
+        "./libs/shared-mfe-context/src/index.ts"
+      ],
+      "@nx-dashboard-agent/shared-mfe-context": [
         "./libs/shared-mfe-context/src/index.ts"
       ]
     }

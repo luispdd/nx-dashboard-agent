@@ -29,9 +29,47 @@ export default [
                     ],
                     depConstraints: [
                         {
-                            sourceTag: "*",
+                            sourceTag: "scope:dashboard",
                             onlyDependOnLibsWithTags: [
-                                "*"
+                                "scope:dashboard",
+                                "scope:shared"
+                            ]
+                        },
+                        {
+                            sourceTag: "scope:chat",
+                            onlyDependOnLibsWithTags: [
+                                "scope:chat",
+                                "scope:shared"
+                            ]
+                        },
+                        {
+                            sourceTag: "scope:agent",
+                            onlyDependOnLibsWithTags: [
+                                "scope:agent",
+                                "scope:shared"
+                            ]
+                        },
+                        {
+                            sourceTag: "scope:shared",
+                            onlyDependOnLibsWithTags: [
+                                "scope:shared"
+                            ]
+                        },
+                        {
+                            sourceTag: "type:app",
+                            onlyDependOnLibsWithTags: [
+                                "type:feature",
+                                "type:ui",
+                                "type:data-access",
+                                "type:util",
+                                "type:contracts"
+                            ]
+                        },
+                        {
+                            sourceTag: "type:contracts",
+                            onlyDependOnLibsWithTags: [
+                                "type:contracts",
+                                "type:util"
                             ]
                         }
                     ]
