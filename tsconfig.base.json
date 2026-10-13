@@ -1,0 +1,18 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "module": "Preserve",
+    "lib": [
+      "ESNext"
+    ],
+    "skipLibCheck": true,
+    "strict": true,
+    "paths": {
+      "shared-mfe-context": [
+        "./libs/shared-mfe-context/src/index.ts"
+      ]
+    }
+  }
+}

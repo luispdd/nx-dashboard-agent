@@ -40,3 +40,16 @@ testem.log
 __screenshots__/
 
 iot-dashboard-agent-plan.md
+vitest.config.*.timestamp*
+.vitest
+
+.angular
+
+vite.config.*.timestamp*
+
+# Nx & Python
+.nx/cache
+.nx/workspace-data
+.venv/
+__pycache__/
+*.pyc
