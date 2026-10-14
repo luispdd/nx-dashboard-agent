@@ -43,6 +43,7 @@ export class SeriesService {
       to: query.to,
       bucketSeconds,
       includeOnDemand: query.include_on_demand,
+      limit: query.limit,
     });
 
     // Group points by device_id

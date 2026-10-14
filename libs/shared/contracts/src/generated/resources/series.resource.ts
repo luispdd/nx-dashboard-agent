@@ -23,9 +23,9 @@ export class SeriesResource {
         return context.set(this.clientContextToken, 'default');
     }
 
-    seriesControllerGetSeries(metric: Signal<string> | string, devices: Signal<Array<string> | undefined> | Array<string> | undefined, from: Signal<string | undefined> | string | undefined, to: Signal<string | undefined> | string | undefined, bucket: Signal<'5m' | '15m' | '1h' | '6h' | '1d' | undefined> | '5m' | '15m' | '1h' | '6h' | '1d' | undefined, includeOnDemand: Signal<boolean | undefined> | boolean | undefined, resourceOptions: HttpResourceOptions<SeriesResponseDto, unknown> & { defaultValue: NoInfer<SeriesResponseDto> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<SeriesResponseDto>;
-    seriesControllerGetSeries(metric: Signal<string> | string, devices?: Signal<Array<string> | undefined> | Array<string>, from?: Signal<string | undefined> | string, to?: Signal<string | undefined> | string, bucket?: Signal<'5m' | '15m' | '1h' | '6h' | '1d' | undefined> | '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: Signal<boolean | undefined> | boolean, resourceOptions?: HttpResourceOptions<SeriesResponseDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<SeriesResponseDto | undefined>;
-    seriesControllerGetSeries(metric: Signal<string> | string, devices?: Signal<Array<string> | undefined> | Array<string>, from?: Signal<string | undefined> | string, to?: Signal<string | undefined> | string, bucket?: Signal<'5m' | '15m' | '1h' | '6h' | '1d' | undefined> | '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: Signal<boolean | undefined> | boolean, resourceOptions?: HttpResourceOptions<SeriesResponseDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<SeriesResponseDto | undefined> {
+    seriesControllerGetSeries(metric: Signal<string> | string, devices: Signal<Array<string> | undefined> | Array<string> | undefined, from: Signal<string | undefined> | string | undefined, to: Signal<string | undefined> | string | undefined, bucket: Signal<'5m' | '15m' | '1h' | '6h' | '1d' | undefined> | '5m' | '15m' | '1h' | '6h' | '1d' | undefined, includeOnDemand: Signal<boolean | undefined> | boolean | undefined, limit: Signal<number | undefined> | number | undefined, resourceOptions: HttpResourceOptions<SeriesResponseDto, unknown> & { defaultValue: NoInfer<SeriesResponseDto> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<SeriesResponseDto>;
+    seriesControllerGetSeries(metric: Signal<string> | string, devices?: Signal<Array<string> | undefined> | Array<string>, from?: Signal<string | undefined> | string, to?: Signal<string | undefined> | string, bucket?: Signal<'5m' | '15m' | '1h' | '6h' | '1d' | undefined> | '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: Signal<boolean | undefined> | boolean, limit?: Signal<number | undefined> | number, resourceOptions?: HttpResourceOptions<SeriesResponseDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<SeriesResponseDto | undefined>;
+    seriesControllerGetSeries(metric: Signal<string> | string, devices?: Signal<Array<string> | undefined> | Array<string>, from?: Signal<string | undefined> | string, to?: Signal<string | undefined> | string, bucket?: Signal<'5m' | '15m' | '1h' | '6h' | '1d' | undefined> | '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: Signal<boolean | undefined> | boolean, limit?: Signal<number | undefined> | number, resourceOptions?: HttpResourceOptions<SeriesResponseDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<SeriesResponseDto | undefined> {
 
         // Add default headers if not already present
         let headers = requestOptions?.headers;
@@ -61,6 +61,10 @@ export class SeriesResource {
             const includeOnDemandValue = typeof includeOnDemand === 'function' ? includeOnDemand() : includeOnDemand;
             if (includeOnDemandValue != null) {
                 params = HttpParamsBuilder.addToHttpParams(params, includeOnDemandValue, 'include_on_demand');
+            }
+            const limitValue = typeof limit === 'function' ? limit() : limit;
+            if (limitValue != null) {
+                params = HttpParamsBuilder.addToHttpParams(params, limitValue, 'limit');
             }
             return {
                 url: `${this.basePath}/api/series`,

@@ -12,7 +12,11 @@ Commands go through `bunx nx ...`. Use the workspace's installed Angular version
 - **Standalone components** only; no NgModules.
 - **Zoneless change detection** (`provideExperimentalZonelessChangeDetection()`, no `zone.js`).
 - **Strict file separation**: dedicated `.ts` (component class), `.html` (template), and `.scss` (stylesheet) for every component; no inline templates or inline styles.
-- **Styling**: Tailwind CSS utility classes paired with modular SCSS.
+- **Styling**: Tailwind CSS v4 utility classes paired with modular SCSS.
+  - The Tailwind entry file is plain CSS (`src/tailwind.css`), containing `@import "tailwindcss";` and `@theme { ... }` tokens. Do **not** import Tailwind inside `.scss` files.
+  - In `project.json`, include `src/tailwind.css` alongside `src/styles.scss` in the `esbuild` `styles` array.
+  - Add `@source` entries in `tailwind.css` for any `libs/` projects whose templates use Tailwind classes.
+  - Convention: use utility classes in templates (full class names only, never built from string fragments). If `@apply` or theme variables are needed in component styles, import global tokens with `@reference`, or use `var(--color-...)` directly.
 - Feature-oriented folders; smart (container) components fetch and coordinate, presentational components take inputs and emit outputs.
 - No business or data logic in components. Put it in services or pure functions that are easy to test.
 

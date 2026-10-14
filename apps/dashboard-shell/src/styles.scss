@@ -1,1 +1,103 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --bg-app: #0B0D12;
+  --bg-card: #131722;
+  --bg-card-hover: #181E2C;
+  --bg-rail: #171B28;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(45, 212, 191, 0.5);
+  --divider: rgba(255, 255, 255, 0.06);
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --accent: #2DD4BF;
+  --accent-glow: rgba(45, 212, 191, 0.2);
+
+  /* Metric Palettes */
+  --metric-temperature: #2DD4BF;
+  --metric-humidity: #38BDF8;
+  --metric-light: #FBBF24;
+}
+
+html, body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Base custom utility styling */
+.bg-card {
+  background-color: var(--bg-card);
+}
+
+.bg-card-hover:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.bg-rail {
+  background-color: var(--bg-rail);
+}
+
+.border-theme {
+  border-color: var(--border);
+}
+
+.border-divider {
+  border-color: var(--divider);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.font-mono {
+  font-family: 'Roboto Mono', monospace;
+}
+
+/* Material Symbols positioning */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+/* ApexCharts dark styling overrides */
+.apexcharts-canvas {
+  font-family: inherit !important;
+}
+
+.apexcharts-tooltip.apexcharts-theme-dark {
+  background: #131722 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 8px !important;
+}
+
+.apexcharts-tooltip-title {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-family: 'Roboto Mono', monospace !important;
+  font-size: 11px !important;
+}
+
+.apexcharts-toolbar {
+  z-index: 10 !important;
+}
+
+.apexcharts-menu {
+  background: #171B28 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.apexcharts-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}

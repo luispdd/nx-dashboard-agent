@@ -52,6 +52,28 @@ describe('SeriesController', () => {
     });
   });
 
+  it('should forward limit parameter to repository and return limited series', async () => {
+    mockRepo.getSeries.mockClear();
+    mockRepo.getSeries.mockResolvedValue([
+      { device_id: 'esp32c6', ts: '2026-10-05T08:05:00Z', value: 24.0 },
+    ]);
+
+    const res = await controller.getSeries({
+      metric: 'temperature',
+      limit: 1,
+    });
+
+    expect(mockRepo.getSeries).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metric: 'temperature',
+        limit: 1,
+      })
+    );
+    expect(res.series).toHaveLength(1);
+    expect(res.series[0].points).toHaveLength(1);
+    expect(res.series[0].points[0].value).toBe(24.0);
+  });
+
   it('should throw BadRequestException if metric is not in catalogue', async () => {
     await expect(
       controller.getSeries({ metric: 'unknown_metric' })
@@ -66,5 +88,36 @@ describe('SeriesController', () => {
         to: '2026-10-05T00:00:00Z',
       })
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should validate limit query parameter in SeriesQueryDto', async () => {
+    const { validate } = await import('class-validator');
+    const { plainToInstance } = await import('class-transformer');
+    const { SeriesQueryDto } = await import('./dto/series-query.dto');
+
+    // Valid positive limit
+    const validDto = plainToInstance(SeriesQueryDto, {
+      metric: 'temperature',
+      limit: '50',
+    });
+    const validErrors = await validate(validDto);
+    expect(validErrors.filter((e) => e.property === 'limit')).toHaveLength(0);
+    expect(validDto.limit).toBe(50);
+
+    // Invalid non-positive limit (0)
+    const zeroDto = plainToInstance(SeriesQueryDto, {
+      metric: 'temperature',
+      limit: 0,
+    });
+    const zeroErrors = await validate(zeroDto);
+    expect(zeroErrors.filter((e) => e.property === 'limit')).toHaveLength(1);
+
+    // Invalid negative limit (-5)
+    const negDto = plainToInstance(SeriesQueryDto, {
+      metric: 'temperature',
+      limit: -5,
+    });
+    const negErrors = await validate(negDto);
+    expect(negErrors.filter((e) => e.property === 'limit')).toHaveLength(1);
   });
 });

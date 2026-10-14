@@ -6,8 +6,10 @@ import {
   IsIn,
   Matches,
   IsBoolean,
+  IsInt,
+  Min,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export type BucketInterval = '5m' | '15m' | '1h' | '6h' | '1d';
 
@@ -91,6 +93,16 @@ export class SeriesQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   include_on_demand?: boolean = false;
+
+  @ApiPropertyOptional({
+    description: 'Limit output to the latest N data points per device',
+    example: 50,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number;
 }
 
 export class SeriesPointDto {

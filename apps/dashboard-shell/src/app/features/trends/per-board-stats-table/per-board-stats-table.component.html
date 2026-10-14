@@ -1,0 +1,71 @@
+<div class="per-board-stats-card rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-xl backdrop-blur-sm">
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+    <div>
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-200">
+        Per-Board Telemetry Statistics
+      </h3>
+      <p class="text-xs text-slate-400">
+        Computed directly from active time-series measurements
+      </p>
+    </div>
+    @if (unit()) {
+      <span class="inline-flex items-center rounded-md bg-slate-800/80 px-2.5 py-1 text-xs font-medium text-slate-300">
+        Unit: {{ unit() }}
+      </span>
+    }
+  </div>
+
+  @if (rows().length > 0) {
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm text-slate-300" aria-label="Device statistics summary">
+        <thead class="border-b border-slate-800 bg-slate-950/40 text-xs font-semibold uppercase text-slate-400">
+          <tr>
+            <th scope="col" class="px-4 py-3">Device</th>
+            <th scope="col" class="px-4 py-3 text-right">Measurements</th>
+            <th scope="col" class="px-4 py-3 text-right">Latest</th>
+            <th scope="col" class="px-4 py-3 text-right">Min</th>
+            <th scope="col" class="px-4 py-3 text-right">Avg</th>
+            <th scope="col" class="px-4 py-3 text-right">Max</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60">
+          @for (row of rows(); track row.device_id) {
+            <tr class="transition-colors hover:bg-slate-800/30">
+              <td class="whitespace-nowrap px-4 py-3 font-medium text-slate-200">
+                <div class="flex items-center gap-2.5">
+                  <span
+                    class="h-3 w-3 shrink-0 rounded-full shadow-xs"
+                    [style.background-color]="row.color"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="font-mono text-xs">{{ row.device_id }}</span>
+                </div>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-right">
+                <span class="inline-flex items-center rounded-md bg-slate-800/60 px-2 py-0.5 font-mono text-xs font-medium text-cyan-300">
+                  {{ row.count }}
+                </span>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-emerald-400">
+                {{ formatValue(row.latest) }}
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-slate-300">
+                {{ formatValue(row.min) }}
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-amber-300">
+                {{ formatValue(row.avg) }}
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-slate-300">
+                {{ formatValue(row.max) }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="py-6 text-center text-sm text-slate-500">
+      No device telemetry available to compute statistics.
+    </div>
+  }
+</div>

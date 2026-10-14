@@ -25,10 +25,10 @@ export class SeriesService {
         return context.set(this.clientContextToken, 'default');
     }
 
-    seriesControllerGetSeries(metric: string, devices?: Array<string>, from?: string, to?: string, bucket?: '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: boolean, observe?: 'body', options?: RequestOptions<'json'>): Observable<SeriesResponseDto>;
-    seriesControllerGetSeries(metric: string, devices?: Array<string>, from?: string, to?: string, bucket?: '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: boolean, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<SeriesResponseDto>>;
-    seriesControllerGetSeries(metric: string, devices?: Array<string>, from?: string, to?: string, bucket?: '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: boolean, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<SeriesResponseDto>>;
-    seriesControllerGetSeries(metric: string, devices?: Array<string>, from?: string, to?: string, bucket?: '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: boolean, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+    seriesControllerGetSeries(metric: string, devices?: Array<string>, from?: string, to?: string, bucket?: '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: boolean, limit?: number, observe?: 'body', options?: RequestOptions<'json'>): Observable<SeriesResponseDto>;
+    seriesControllerGetSeries(metric: string, devices?: Array<string>, from?: string, to?: string, bucket?: '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: boolean, limit?: number, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<SeriesResponseDto>>;
+    seriesControllerGetSeries(metric: string, devices?: Array<string>, from?: string, to?: string, bucket?: '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: boolean, limit?: number, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<SeriesResponseDto>>;
+    seriesControllerGetSeries(metric: string, devices?: Array<string>, from?: string, to?: string, bucket?: '5m' | '15m' | '1h' | '6h' | '1d', includeOnDemand?: boolean, limit?: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
         const url = `${this.basePath}/api/series`;
 
         let params = new HttpParams();
@@ -49,6 +49,9 @@ export class SeriesService {
         }
         if (includeOnDemand != null) {
             params = HttpParamsBuilder.addToHttpParams(params, includeOnDemand, 'include_on_demand');
+        }
+        if (limit != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, limit, 'limit');
         }
 
         let headers: HttpHeaders;

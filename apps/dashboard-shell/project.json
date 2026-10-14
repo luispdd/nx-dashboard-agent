@@ -76,6 +76,7 @@
           }
         ],
         "styles": [
+          "apps/dashboard-shell/src/tailwind.css",
           "apps/dashboard-shell/src/styles.scss"
         ],
         "polyfills": [
@@ -118,7 +119,8 @@
         }
       },
       "options": {
-        "port": 4200
+        "port": 4200,
+        "proxyConfig": "apps/dashboard-shell/proxy.conf.json"
       }
     }
   }

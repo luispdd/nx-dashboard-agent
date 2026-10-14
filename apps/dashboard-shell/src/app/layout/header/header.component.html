@@ -1,0 +1,70 @@
+<header class="h-16 border-b border-theme bg-card/80 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between">
+  <!-- Brand Identity -->
+  <div class="flex items-center gap-6">
+    <a routerLink="/" class="flex items-center gap-2.5 text-text-primary no-underline group">
+      <div class="w-8 h-8 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent group-hover:scale-105 transition-transform">
+        <span class="material-symbols-outlined text-[20px]">sensors</span>
+      </div>
+      <div>
+        <span class="font-bold text-sm tracking-wide block leading-tight text-white">IoT Dashboard</span>
+        <span class="text-[10px] text-text-muted font-mono tracking-wider uppercase block">Environmental Telemetry</span>
+      </div>
+    </a>
+
+    <!-- Navigation Links -->
+    <nav class="hidden md:flex items-center gap-1.5 ml-4">
+      <a
+        routerLink="/"
+        [routerLinkActiveOptions]="{ exact: true }"
+        routerLinkActive="bg-accent/15 text-accent border-accent/40 font-semibold"
+        class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:text-white border border-transparent transition-all flex items-center gap-1.5"
+        data-testid="nav-trends"
+      >
+        <span class="material-symbols-outlined text-[16px]">show_chart</span>
+        <span>Trends</span>
+      </a>
+
+      <a
+        routerLink="/distribution"
+        routerLinkActive="bg-accent/15 text-accent border-accent/40 font-semibold"
+        class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:text-white border border-transparent transition-all flex items-center gap-1.5"
+        data-testid="nav-distribution"
+      >
+        <span class="material-symbols-outlined text-[16px]">pie_chart</span>
+        <span>Distribution</span>
+      </a>
+
+      <a
+        routerLink="/settings"
+        routerLinkActive="bg-accent/15 text-accent border-accent/40 font-semibold"
+        class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:text-white border border-transparent transition-all flex items-center gap-1.5"
+        data-testid="nav-settings"
+      >
+        <span class="material-symbols-outlined text-[16px]">settings</span>
+        <span>Settings</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Actions (Chat Remote Assistant Toggle) -->
+  <div class="flex items-center gap-3">
+    <button
+      type="button"
+      (click)="onToggleChat()"
+      class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-2"
+      [ngClass]="{
+        'bg-accent text-gray-900 border-accent font-semibold shadow-lg shadow-accent/20': isChatOpen(),
+        'bg-rail border-theme text-text-secondary hover:text-white hover:border-white/20': !isChatOpen()
+      }"
+      data-testid="toggle-chat-button"
+      aria-label="Toggle AI Assistant"
+    >
+      <span class="material-symbols-outlined text-[18px]">smart_toy</span>
+      <span class="hidden sm:inline">AI Assistant</span>
+      <span
+        class="w-2 h-2 rounded-full"
+        [ngClass]="isChatOpen() ? 'bg-gray-900' : 'bg-accent animate-pulse'"
+      ></span>
+    </button>
+  </div>
+</header>

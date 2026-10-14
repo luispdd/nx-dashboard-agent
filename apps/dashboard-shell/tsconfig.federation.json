@@ -2,5 +2,9 @@
   "extends": "./tsconfig.app.json",
   "include": [
     "src/**/*.d.ts"
+  ],
+  "files": [
+    "../../libs/shared/contracts/src/index.ts",
+    "../../libs/shared-mfe-context/src/index.ts"
   ]
 }

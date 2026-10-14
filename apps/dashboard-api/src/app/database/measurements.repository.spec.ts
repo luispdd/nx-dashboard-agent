@@ -115,6 +115,46 @@ describe('KyselyMeasurementsRepository', () => {
       expect(esp32s3Points).toHaveLength(1);
       expect(esp32s3Points[0].value).toBe(18.0);
     });
+
+    it('should limit series to latest N points per device in chronological order', async () => {
+      // esp32c6 has 2 buckets for scheduled temperature: 08:00 (21.0) and 08:05 (24.0)
+      // With limit=1, it should return only the latest bucket (08:05:00Z, 24.0)
+      const series = await repo.getSeries({
+        metric: 'temperature',
+        devices: ['esp32c6'],
+        bucketSeconds: 300,
+        limit: 1,
+      });
+
+      expect(series).toHaveLength(1);
+      expect(series[0]).toEqual({
+        device_id: 'esp32c6',
+        ts: '2026-10-05T08:05:00Z',
+        value: 24.0,
+      });
+    });
+
+    it('should apply limit per device across multiple devices', async () => {
+      const series = await repo.getSeries({
+        metric: 'temperature',
+        devices: ['esp32c6', 'esp32s3'],
+        bucketSeconds: 300,
+        limit: 1,
+      });
+
+      // 1 latest point for esp32c6, 1 for esp32s3
+      expect(series).toHaveLength(2);
+      expect(series[0]).toEqual({
+        device_id: 'esp32c6',
+        ts: '2026-10-05T08:05:00Z',
+        value: 24.0,
+      });
+      expect(series[1]).toEqual({
+        device_id: 'esp32s3',
+        ts: '2026-10-05T08:00:00Z',
+        value: 18.0,
+      });
+    });
   });
 
   describe('getStats', () => {

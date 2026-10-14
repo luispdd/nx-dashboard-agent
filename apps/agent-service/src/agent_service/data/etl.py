@@ -68,6 +68,17 @@ def map_sampling(is_fine_tuned: Any) -> str:
     return "scheduled"
 
 
+UNIT_NORMALIZATIONS: dict[str, str] = {
+    "%RH": "%",
+    "Cel": "°C",
+}
+
+METRIC_KEY_NORMALIZATIONS: dict[str, str] = {
+    "temp": "temperature",
+    "hum": "humidity",
+}
+
+
 def build_catalog_and_validate_units(source_conn: sqlite3.Connection) -> dict[str, str]:
     """Builds metrics_catalog and asserts each metric_key has a uniform unit across all devices."""
     rows = source_conn.execute(
@@ -78,12 +89,14 @@ def build_catalog_and_validate_units(source_conn: sqlite3.Connection) -> dict[st
     for dev_id, metric_key, unit in rows:
         if not metric_key or not unit:
             continue
-        if metric_key in catalog and catalog[metric_key] != unit:
+        m_key = METRIC_KEY_NORMALIZATIONS.get(metric_key.strip(), metric_key.strip())
+        norm_unit = UNIT_NORMALIZATIONS.get(unit.strip(), unit.strip())
+        if m_key in catalog and catalog[m_key] != norm_unit:
             raise ValueError(
-                f"Conflicting unit for metric '{metric_key}': device '{dev_id}' reports '{unit}' "
-                f"while another device reports '{catalog[metric_key]}'."
+                f"Conflicting unit for metric '{m_key}': device '{dev_id}' reports '{norm_unit}' "
+                f"while another device reports '{catalog[m_key]}'."
             )
-        catalog[metric_key] = unit
+        catalog[m_key] = norm_unit
 
     return catalog
 
@@ -169,13 +182,14 @@ def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummar
                 raise ValueError(f"Malformed JSON in reading id at {raw_ts}: {metrics_raw}") from err
 
             for m_key, val in metrics_dict.items():
-                if m_key not in catalog:
+                norm_m_key = METRIC_KEY_NORMALIZATIONS.get(m_key.strip(), m_key.strip())
+                if norm_m_key not in catalog:
                     raise ValueError(
                         f"Reading at {raw_ts} for device '{dev_id}' contains undeclared metric '{m_key}'"
                     )
 
                 float_val = float(val) if val is not None else None
-                measurements_batch.append((ts_norm, dev_id, m_key, float_val, sampling))
+                measurements_batch.append((ts_norm, dev_id, norm_m_key, float_val, sampling))
 
                 if len(measurements_batch) >= 5000:
                     dest_conn.executemany(

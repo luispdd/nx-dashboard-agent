@@ -10,6 +10,14 @@
   "implicitDependencies": [
     "dashboard-shell"
   ],
-  "// targets": "to see all targets run: nx show project dashboard-shell-e2e --web",
-  "targets": {}
+  "targets": {
+    "e2e": {
+      "executor": "nx:run-commands",
+      "dependsOn": [],
+      "options": {
+        "cwd": "apps/dashboard-shell-e2e",
+        "command": "playwright test"
+      }
+    }
+  }
 }

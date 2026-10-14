@@ -90,6 +90,39 @@ export class KyselyMeasurementsRepository
     )}) * ${sql.raw(bucketSeconds.toString())}, 'unixepoch'), ' ', 'T') || 'Z'`;
     const avgValueExpr = sql<number>`round(avg(value), 2)`;
 
+    if (options.limit && options.limit > 0) {
+      const bucketedQuery = query
+        .select([
+          'device_id',
+          bucketTsExpr.as('ts'),
+          avgValueExpr.as('value'),
+        ])
+        .groupBy(['device_id', bucketTsExpr]);
+
+      const rankedQuery = this.db
+        .selectFrom(bucketedQuery.as('b'))
+        .select([
+          'device_id',
+          'ts',
+          'value',
+          sql<number>`row_number() over (partition by device_id order by ts desc)`.as('rk'),
+        ]);
+
+      const rows = await this.db
+        .selectFrom(rankedQuery.as('r'))
+        .select(['device_id', 'ts', 'value'])
+        .where('rk', '<=', options.limit)
+        .orderBy('device_id', 'asc')
+        .orderBy('ts', 'asc')
+        .execute();
+
+      return rows.map((r) => ({
+        device_id: r.device_id,
+        ts: r.ts,
+        value: Number(r.value),
+      }));
+    }
+
     const rows = await query
       .select([
         'device_id',

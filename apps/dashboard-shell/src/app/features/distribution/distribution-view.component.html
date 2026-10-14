@@ -1,0 +1,148 @@
+<div class="space-y-6" data-testid="distribution-view">
+  <!-- Header with Metric Selector -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-white">Device Measurement Distribution</h1>
+      <p class="text-xs text-slate-400 mt-1">Reading volume breakdown and reporting health across IoT boards</p>
+    </div>
+
+    @if (capabilitiesService.metrics().length > 0) {
+      <div class="flex items-center gap-2">
+        <label for="dist-metric" class="text-xs font-medium text-slate-400">Metric:</label>
+        <select
+          id="dist-metric"
+          [value]="selectedMetric()"
+          (change)="onMetricChange($event)"
+          class="rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-medium text-slate-200 outline-hidden focus:border-cyan-500"
+        >
+          @for (m of capabilitiesService.metrics(); track m.metric_key) {
+            <option [value]="m.metric_key">{{ m.label }} ({{ m.unit }})</option>
+          }
+        </select>
+      </div>
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex h-64 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-slate-400">
+      <div class="flex items-center gap-3 text-cyan-400">
+        <svg class="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <span class="text-sm font-medium text-slate-300">Calculating measurement volume distribution...</span>
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="rounded-xl border border-rose-900/50 bg-rose-950/20 p-4 text-rose-300">
+      <div class="flex items-center justify-between">
+        <p class="text-sm">Failed to load statistics: {{ error() }}</p>
+        <button
+          type="button"
+          (click)="fetchStats()"
+          class="rounded-md bg-rose-900/40 px-3 py-1 text-xs font-semibold text-rose-200 hover:bg-rose-900/60 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  } @else if (hasData()) {
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <!-- Donut Chart Card -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-xl backdrop-blur-sm">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-200">
+            Volume Breakdown
+          </h2>
+          <span class="rounded-md bg-cyan-950/60 px-2 py-0.5 font-mono text-xs text-cyan-400 border border-cyan-800/40">
+            Total: {{ totalReadings() }}
+          </span>
+        </div>
+        <apx-chart
+          [chart]="chart()"
+          [series]="donutSeries()"
+          [labels]="donutLabels()"
+          [colors]="donutColors()"
+          [legend]="legend()"
+          [tooltip]="tooltip()"
+          [plotOptions]="plotOptions()"
+          [dataLabels]="dataLabels()"
+          [noData]="noData()"
+        />
+      </div>
+
+      <!-- Health & Volume Breakdown Table Card -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-5 shadow-xl backdrop-blur-sm">
+        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-200">
+          Board Reporting Metrics
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-300" aria-label="Device reporting summary">
+            <thead class="border-b border-slate-800 bg-slate-950/40 text-xs font-semibold uppercase text-slate-400">
+              <tr>
+                <th scope="col" class="px-3 py-2.5">Device</th>
+                <th scope="col" class="px-3 py-2.5 text-right">Readings</th>
+                <th scope="col" class="px-3 py-2.5 text-right">Share</th>
+                <th scope="col" class="px-3 py-2.5 text-right">Missing</th>
+                <th scope="col" class="px-3 py-2.5 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+              @for (row of distributionRows(); track row.device_id) {
+                <tr class="transition-colors hover:bg-slate-800/30">
+                  <td class="whitespace-nowrap px-3 py-2.5 font-medium text-slate-200">
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="h-2.5 w-2.5 shrink-0 rounded-full"
+                        [style.background-color]="row.color"
+                        aria-hidden="true"
+                      ></span>
+                      <span class="font-mono text-xs">{{ row.device_id }}</span>
+                    </div>
+                  </td>
+                  <td class="whitespace-nowrap px-3 py-2.5 text-right font-mono text-xs text-slate-200">
+                    {{ row.count }}
+                  </td>
+                  <td class="whitespace-nowrap px-3 py-2.5 text-right font-mono text-xs text-cyan-300">
+                    {{ row.percentage.toFixed(1) }}%
+                  </td>
+                  <td class="whitespace-nowrap px-3 py-2.5 text-right font-mono text-xs text-slate-400">
+                    {{ (row.missingRatio * 100).toFixed(1) }}%
+                  </td>
+                  <td class="whitespace-nowrap px-3 py-2.5 text-center">
+                    @switch (row.healthStatus) {
+                      @case ('healthy') {
+                        <span class="inline-flex items-center rounded-full bg-emerald-950/60 px-2 py-0.5 text-xs font-medium text-emerald-400 border border-emerald-800/50">
+                          Healthy
+                        </span>
+                      }
+                      @case ('degraded') {
+                        <span class="inline-flex items-center rounded-full bg-amber-950/60 px-2 py-0.5 text-xs font-medium text-amber-400 border border-amber-800/50">
+                          Degraded
+                        </span>
+                      }
+                      @case ('offline') {
+                        <span class="inline-flex items-center rounded-full bg-rose-950/60 px-2 py-0.5 text-xs font-medium text-rose-400 border border-rose-800/50">
+                          Offline
+                        </span>
+                      }
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="flex h-64 flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900/60 p-8 text-slate-400">
+      <svg class="mb-3 h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+      </svg>
+      <p class="text-base font-medium text-slate-300">No measurement distribution data</p>
+      <p class="text-sm text-slate-500">Telemetry records are required to calculate board distribution.</p>
+    </div>
+  }
+</div>

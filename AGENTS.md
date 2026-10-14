@@ -33,7 +33,7 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 
 ## Tool Selection & Tooling
 
-- TypeScript / Angular / React scripts: use `nx`, `bun` or `bunx` (e.g. `bunx nx ...`, `bun install`). Do not use `npm`, `npx`, `yarn` or `pnpm`.
+- TypeScript / Angular / React scripts: run `nx` directly (e.g. `nx affected ...`, `nx serve ...`); use `bun` for package management (`bun install`, `bun add`). Do not prefix with `bunx nx`. Do not use `npm`, `npx`, `yarn` or `pnpm`.
 - Python: use `uv` for everything (`uv sync`, `uv add`, `uv run`). Do not use `pip`, `poetry` or bare `python -m venv`.
 - Prefer Nx generators over creating projects by hand.
 - Prefer `nx affected` over running everything.
@@ -62,18 +62,25 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **`ng-openapi` in ESM Workspaces**: In ESM root workspaces (`"type": "module"`), name the config `openapi.config.cjs` using `require()`. Generated client output (`libs/shared/contracts/src/generated/`) emits `@ts-nocheck` directives; add `{ ignores: ["src/generated/**/*"] }` to the library's `eslint.config.mjs`.
 - **Kysely SQLite Integer Division & UTC Timestamps**: Template expressions `${bucketSeconds}` in Kysely `sql` strings parameterize values as SQLite binds, producing floating-point division. Wrap interval seconds with `sql.raw(bucketSeconds.toString())`. SQLite `datetime()` uses space separation; format as ISO UTC via `replace(datetime(...), ' ', 'T') || 'Z'`.
 - **NestJS Optional Providers in Vitest**: Optional constructor dependencies (e.g. `sqliteInstance?: Database.Database`) trigger `UnknownDependenciesException` in Vitest unless explicitly decorated with `@Optional()`.
+- **Tailwind v4 in Angular ApplicationBuilder**: Tailwind v4 cannot process through Sass. Keep the Tailwind v4 entry in a plain `.css` file (`src/tailwind.css`) with `@import "tailwindcss";` and `@theme { ... }`, adding it to `styles` alongside `styles.scss` in `project.json`. Do not import or `@use "tailwindcss"` in `.scss`. Project-level `.postcssrc.json` registering `@tailwindcss/postcss` is resolved natively by `@angular/build:application`.
+- **Native Federation Dev Proxy**: Native Federation's `serve` target wraps `serve-original` (`@angular/build:dev-server`). Add `"proxyConfig": "<path>/proxy.conf.json"` to the `options` block of `serve-original`, not to `serve` or `esbuild`.
+- **OpenAPI Export Prerequisite for API Contract Tests**: `apps/dashboard-api/src/app/openapi-contract.spec.ts` verifies against `dist/apps/dashboard-api/openapi.json`. Run `nx run dashboard-api:export-openapi` before executing API tests if `dist/` is clean or newly cloned.
+- **Playwright `dependsOn` vs `webServer` Conflict**: `@nx/playwright/plugin` infers `"dependsOn": [{"target": "serve", "projects": ["<app>"]}]`. This causes port collision errors if the dev server is already running, or hangs batch runs indefinitely because the dev server never exits. Override `targets.e2e` in `<app>-e2e/project.json` with `"dependsOn": []` and let Playwright's native `webServer` block manage the lifecycle (`reuseExistingServer: true`), adding `reporter: [['list'], ['html', { open: 'never' }]]` in `playwright.config.mts` so Playwright never blocks CLI execution.
+- **Native Federation Secondary Bundling & `@angular/animations`**: Never include `@angular/platform-browser` in `.patch([...], { includeSecondaries: { keepAll: true } })` in `federation.config.mjs`. This causes Native Federation to bundle `@angular/platform-browser/animations`, crashing esbuild with `Could not resolve "@angular/animations/browser"` when `@angular/animations` is not installed. Patch only `@angular/core`, `@angular/common`, and `@angular/router`.
+- **Native Federation & Angular Build Version Lock**: Keep `@angular-architects/native-federation` strictly aligned with the minor version of `@angular/build` (e.g. `~22.2.2`). Version mismatches break `@angular/build` private API assumptions in `JavaScriptTransformer.transformData`, causing the Angular Linker to be skipped and emitting unlinked `ɵɵngDeclareInjectable` declarations that crash at runtime with `_PlatformLocation needs to be compiled using the JIT compiler`. Always wipe `node_modules/.cache/native-federation` when updating Angular or Native Federation versions.
+- **Micro Frontend Remote Inactive "CORS" False Alarm**: When `dashboard-shell` boots, Native Federation fetches remotes defined in `federation.manifest.json` (e.g. `http://localhost:4204/remoteEntry.json`). If `chat-mfe` is not running, browsers fail the cross-origin TCP connection and report it as `CORS request did not succeed (status code: null)`. This is connection refusal (remote server stopped), not a CORS misconfiguration. Start the remote with `nx serve chat-mfe`.
 
 ## Commands
 
 ```bash
 bun install                                         # install JS dependencies
-bunx nx affected -t lint test build                 # lint, test, build what changed
-bunx nx serve <project>                             # run a project (dashboard-shell, chat-mfe, dashboard-api, agent-service)
-bunx nx e2e <project>-e2e                           # run Playwright E2E tests
-bunx nx run agent-service:seed                      # generate synthetic source SQLite DB
-bunx nx run agent-service:etl                       # run ETL pipeline to build derived DB
-bunx nx run dashboard-api:export-openapi             # export OpenAPI spec to dist/apps/dashboard-api/openapi.json
-bunx nx run shared-contracts:generate-contracts     # generate Angular httpResource services from openapi.json
+nx affected -t lint test build                      # lint, test, build what changed
+nx serve <project>                                  # run a project (dashboard-shell, chat-mfe, dashboard-api, agent-service)
+nx e2e <project>-e2e                                # run Playwright E2E tests
+nx run agent-service:seed                           # generate synthetic source SQLite DB
+nx run agent-service:etl                            # run ETL pipeline to build derived DB
+nx run dashboard-api:export-openapi                 # export OpenAPI spec to dist/apps/dashboard-api/openapi.json
+nx run shared-contracts:generate-contracts          # generate Angular httpResource services from openapi.json
 cd apps/agent-service && uv sync                    # install Python dependencies
 cd apps/agent-service && uv run pytest              # run Python tests
 cd apps/agent-service && uv run ruff check .        # run Python linter

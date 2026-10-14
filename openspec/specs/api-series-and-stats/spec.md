@@ -7,7 +7,7 @@ Provides high-performance time-series downsampling, multi-device groupings, and 
 ## Requirements
 
 ### Requirement: Query downsampled time-series measurements
-The API SHALL provide an endpoint `GET /api/series` that returns time-series data downsampled into discrete time buckets for one or more devices.
+The API SHALL provide an endpoint `GET /api/series` that returns time-series data downsampled into discrete time buckets for one or more devices, optionally limited to the most recent data points per device.
 
 #### Scenario: Querying time series with default bucketing
 - **WHEN** a client requests `GET /api/series?metric=temperature`
@@ -25,6 +25,10 @@ The API SHALL provide an endpoint `GET /api/series` that returns time-series dat
 - **WHEN** a sensor experiences an outage and produces no measurements during a time window
 - **THEN** the API SHALL omit empty buckets rather than inserting synthetic zero or interpolated values
 
+#### Scenario: Limiting series to latest N measurements per device
+- **WHEN** a client provides `limit=50` in the query parameters
+- **THEN** the API SHALL return at most the 50 most recent bucketed data points for each device, sorted in chronological order (ascending timestamp)
+
 #### Scenario: Scheduled vs on-demand sampling filtering
 - **WHEN** `include_on_demand` is false or omitted
 - **THEN** the API SHALL exclude `on_demand` manual readings and aggregate regular `scheduled` readings only
@@ -40,6 +44,10 @@ The API SHALL provide an endpoint `GET /api/series` that returns time-series dat
 #### Scenario: Rejecting zone-less or malformed timestamps
 - **WHEN** a client provides a `from` or `to` parameter lacking UTC `Z` format (e.g. `2026-10-05T08:00:00`)
 - **THEN** the API SHALL return an HTTP 400 Bad Request error
+
+#### Scenario: Rejecting non-positive limit parameter
+- **WHEN** a client provides `limit=0` or `limit=-5`
+- **THEN** the API SHALL return an HTTP 400 Bad Request error indicating limit must be a positive integer
 
 ### Requirement: Statistical summaries calculation
 The API SHALL provide an endpoint `GET /api/stats` that computes descriptive statistics for a specified metric across one or more devices over a time window.

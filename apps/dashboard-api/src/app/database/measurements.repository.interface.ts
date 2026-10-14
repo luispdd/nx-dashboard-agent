@@ -28,6 +28,7 @@ export interface SeriesQueryOptions {
   to?: string;
   bucketSeconds?: number;
   includeOnDemand?: boolean;
+  limit?: number;
 }
 
 export interface StatsQueryOptions {
