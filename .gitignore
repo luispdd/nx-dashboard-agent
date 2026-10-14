@@ -53,3 +53,14 @@ vite.config.*.timestamp*
 .venv/
 __pycache__/
 *.pyc
+
+# Data & Databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+data/migrations/*.db
+data/derived/*.db
+data/runtime-config.json

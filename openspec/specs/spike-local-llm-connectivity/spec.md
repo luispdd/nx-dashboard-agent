@@ -7,14 +7,14 @@ Validates local LLM server access, authentication, streaming, and tool calling f
 ## Requirements
 
 ### Requirement: Local LLM service connectivity and authentication
-The FastAPI agent service SHALL connect to a local Unsloth LLM server and resolve its authentication method via configurable environment variables.
+The FastAPI agent service SHALL connect to an OpenAI-compatible LLM endpoint (local runner or remote API) and resolve its authentication and connection parameters via runtime configuration with environment variable fallback.
 
 #### Scenario: Verifying LLM endpoint health and access
 - **WHEN** the agent service initiates a connectivity probe to the configured `LLM_BASE_URL`
-- **THEN** the service SHALL authenticate and confirm the model `unsloth/Qwen3.5-4B-GGUF:UD-Q4_K_XL` is reachable
+- **THEN** the service SHALL authenticate and confirm the configured model is reachable
 
 #### Scenario: Switching LLM provider via configuration
-- **WHEN** `LLM_BASE_URL`, `LLM_MODEL`, or `LLM_API_KEY` environment variables are changed
+- **WHEN** runtime configuration in `data/runtime-config.json` or `.env` parameters are changed
 - **THEN** the client SHALL connect to the updated provider without requiring code modifications
 
 ### Requirement: Streaming chat completion and tool calling verification

@@ -28,6 +28,20 @@
         "command": "uv run ruff check .",
         "cwd": "apps/agent-service"
       }
+    },
+    "seed": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run seed",
+        "cwd": "apps/agent-service"
+      }
+    },
+    "etl": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv run etl",
+        "cwd": "apps/agent-service"
+      }
     }
   }
 }

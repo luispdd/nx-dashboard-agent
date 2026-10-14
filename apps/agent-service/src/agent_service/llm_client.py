@@ -14,8 +14,9 @@ def normalize_base_url(url: str) -> str:
 
 def get_llm_client(custom_settings: Settings | None = None) -> AsyncOpenAI:
     cfg = custom_settings or settings
+    base_url = normalize_base_url(cfg.llm_base_url) if cfg.llm_base_url else None
     return AsyncOpenAI(
-        base_url=normalize_base_url(cfg.llm_base_url),
+        base_url=base_url,
         api_key=cfg.llm_api_key or "not-needed",
     )
 

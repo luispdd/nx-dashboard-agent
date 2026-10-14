@@ -32,13 +32,13 @@ def test_settings_initialization() -> None:
 @pytest.mark.asyncio
 async def test_probe_model_reachability_success() -> None:
     mock_client = MagicMock()
-    mock_model_1 = MagicMock(id="unsloth/Qwen3.5-4B-GGUF:UD-Q4_K_XL")
+    mock_model_1 = MagicMock(id="test-openai-model-4b")
     mock_models_response = MagicMock(data=[mock_model_1])
     mock_client.models.list = AsyncMock(return_value=mock_models_response)
 
     res = await probe_model_reachability(client=mock_client)
     assert res["status"] == "success"
-    assert "unsloth/Qwen3.5-4B-GGUF:UD-Q4_K_XL" in res["models"]
+    assert "test-openai-model-4b" in res["models"]
 
 
 @pytest.mark.asyncio

@@ -9,7 +9,7 @@ IoT dashboard + data agent: a proof of concept used as an interview showcase and
 - **Dashboard:** Angular 22 shell (host, zoneless, signals-first, SCSS + Tailwind, ApexCharts) showing environmental measurements from IoT nodes.
 - **Chat:** React micro frontend (remote, Vite, SCSS + Tailwind, loaded via Native Federation) that talks to an LLM agent about the dashboard data and detects nodes reporting strange data.
 - **Dashboard API:** NestJS (TypeScript), read-only access to a derived SQLite database.
-- **Agent service:** FastAPI (Python, managed with `uv`). Calls the NestJS API as tools; talks to a local LLM (Unsloth on port 8888, Qwen 3.5 4B, configurable) through an OpenAI-compatible API.
+- **Agent service:** FastAPI (Python, managed with `uv`). Calls the NestJS API as tools; talks to an OpenAI-compatible LLM endpoint (local runner or cloud API, configurable) through the standard OpenAI API.
 - **Data:** a source SQLite file produced by another project is copied and transformed (ETL) into a derived read-only database.
 - **Orchestration:** Nx monorepo. Specs managed with OpenSpec.
 
@@ -21,7 +21,7 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **No** free-form SQL tool for the agent. Typed, narrow tools only.
 - The agent service never opens the database directly; it calls the NestJS API.
 - Anomaly statistics are computed deterministically in Python; the LLM only interprets results.
-- The LLM provider is configuration (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`), never hardcoded. Default: `http://127.0.0.1:8888/v1`, `unsloth/Qwen3.5-4B-GGUF`.
+- The LLM provider is configuration (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`), never hardcoded. Resolved from runtime config (`data/runtime-config.json`) when present, falling back to `.env` or defaults.
 - OpenAPI specs are the contract between services; clients are generated, never hand-written.
 - **Microfrontends:** Angular host (`dashboard-shell`) + React remote (`chat-mfe`) via Native Federation (browser ESM and Import Maps).
 - **Styling:** Tailwind CSS + SCSS across all microfrontends.
@@ -53,9 +53,10 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **NestJS DI under Vitest**: Vitest does not emit TypeScript `design:paramtypes` metadata by default. Add explicit `@Inject(ServiceName)` to controller constructor parameters (e.g. `@Inject(AppService) private readonly appService: AppService`) to prevent undefined injection in tests without extra compiler plugins.
 - **Root tsconfig & DOM Lib**: Project configs must extend `tsconfig.base.json`. Keep root `tsconfig.json` clean (no `verbatimModuleSyntax` or `bun` types). Ensure `tsconfig.base.json` includes `"dom"` and `"dom.iterable"` in `compilerOptions.lib` for Angular ApplicationBuilder.
 - **Vite Remote Entry Rollup Signatures**: When bundling React MFE entries (`apps/chat-mfe`), specify `preserveEntrySignatures: 'exports-only'` in `build.rollupOptions` so Rollup does not strip entry exports (`mount`, `Chat`) from `remoteEntry.js`.
-- **Unsloth OpenAI Endpoint Root**: Unsloth mounts OpenAI-compatible routes (`/chat/completions`, `/models`) at `/v1`, not `/api` (`/api` is the internal web UI route and returns 404/405). The client normalizes `/api` suffixes to `/v1`.
+- **OpenAI-Compatible Endpoint Normalization**: Some local servers (like Unsloth Studio) mount OpenAI routes at `/v1` while `/api` is reserved for their UI. The LLM client normalizes any `/api` suffix to `/v1` automatically.
 - **Pytest Auto-Discovery**: Prefix helper/probe functions in non-test or imported modules with `probe_` or `check_`, never `test_`, to avoid Pytest collecting them as failing test cases.
-- **OpenSpec CLI Execution**: Run `openspec <cmd>` directly; never prefix with `bunx` or `npx`.
+- **Nx Environment Injection in Python Tests**: Nx automatically loads `.env` into `os.environ` when executing tasks. Tests asserting fallback behavior or missing environment variables (e.g. Pydantic Settings in `agent-service`) must isolate or delete ambient variables with a `monkeypatch.delenv` fixture to avoid developer `.env` leakage.
+- **OpenSpec CLI Execution**: Run `openspec <cmd>` directly; never prefix with `bunx` or `npx`. Bare `openspec validate` opens an interactive menu; pass explicit flags like `openspec validate --all` or `openspec validate --specs` to avoid hanging background executions.
 - **Python Project Target Delegation**: Configure `apps/agent-service/project.json` with `nx:run-commands` wrapping `uv run <command>` (e.g. `uv run uvicorn`, `uv run pytest`, `uv run ruff`).
 
 ## Commands
@@ -65,6 +66,8 @@ bun install                                         # install JS dependencies
 bunx nx affected -t lint test build                 # lint, test, build what changed
 bunx nx serve <project>                             # run a project (dashboard-shell, chat-mfe, dashboard-api, agent-service)
 bunx nx e2e <project>-e2e                           # run Playwright E2E tests
+bunx nx run agent-service:seed                      # generate synthetic source SQLite DB
+bunx nx run agent-service:etl                       # run ETL pipeline to build derived DB
 cd apps/agent-service && uv sync                    # install Python dependencies
 cd apps/agent-service && uv run pytest              # run Python tests
 cd apps/agent-service && uv run ruff check .        # run Python linter
@@ -75,8 +78,8 @@ cd apps/agent-service && uv run ruff check .        # run Python linter
 1. **Timestamps are UTC with `Z`** everywhere internally (`2026-10-05T08:36:23Z`). The source database has no `Z`; the ETL normalizes it. Never parse a zone-less timestamp with `new Date(...)`. Convert to the viewer's timezone only in the UI. See skill `data-and-time-rules`.
 2. **Regular readings by default.** On-demand (manually triggered) readings are excluded from aggregates unless explicitly requested. The source column `is_fine_tuned` is exposed as `sampling: "scheduled" | "on_demand"`.
 3. **Never edit generated code** (OpenAPI clients, build outputs). Change the source contract and regenerate.
-4. **Never write to the source database.** It is read-only input.
-5. **No secrets in the repository or in Docker images.** Configuration comes from environment variables; commit only `.env.example`.
+4. **Never write to the source database.** It is read-only input, stored in the migrations inbox (`data/migrations/`).
+5. **No secrets in the repository or in Docker images.** Configuration comes from environment variables or `data/runtime-config.json` (git-ignored); commit only `.env.example`.
 6. **Do not implement beyond the active OpenSpec change.** If something is missing from the spec, update the spec or ask.
 7. **No private data in the repo.** Use the synthetic seed generator for fixtures and demos.
 
