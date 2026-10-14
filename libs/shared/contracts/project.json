@@ -1,0 +1,24 @@
+{
+  "name": "shared-contracts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/contracts/src",
+  "projectType": "library",
+  "tags": [
+    "type:contracts",
+    "scope:shared"
+  ],
+  "targets": {
+    "generate-contracts": {
+      "dependsOn": [
+        "dashboard-api:export-openapi"
+      ],
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/libs/shared/contracts/src/generated"
+      ],
+      "options": {
+        "command": "bunx ng-openapi -c libs/shared/contracts/openapi.config.cjs"
+      }
+    }
+  }
+}

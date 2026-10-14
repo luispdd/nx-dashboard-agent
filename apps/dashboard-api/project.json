@@ -61,6 +61,18 @@
           "buildTarget": "dashboard-api:build:production"
         }
       }
+    },
+    "export-openapi": {
+      "dependsOn": [
+        "build"
+      ],
+      "executor": "nx:run-commands",
+      "outputs": [
+        "{workspaceRoot}/dist/apps/dashboard-api/openapi.json"
+      ],
+      "options": {
+        "command": "EXPORT_OPENAPI=true node dist/apps/dashboard-api/main.js"
+      }
     }
   }
 }

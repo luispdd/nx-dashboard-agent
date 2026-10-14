@@ -58,6 +58,10 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **Nx Environment Injection in Python Tests**: Nx automatically loads `.env` into `os.environ` when executing tasks. Tests asserting fallback behavior or missing environment variables (e.g. Pydantic Settings in `agent-service`) must isolate or delete ambient variables with a `monkeypatch.delenv` fixture to avoid developer `.env` leakage.
 - **OpenSpec CLI Execution**: Run `openspec <cmd>` directly; never prefix with `bunx` or `npx`. Bare `openspec validate` opens an interactive menu; pass explicit flags like `openspec validate --all` or `openspec validate --specs` to avoid hanging background executions.
 - **Python Project Target Delegation**: Configure `apps/agent-service/project.json` with `nx:run-commands` wrapping `uv run <command>` (e.g. `uv run uvicorn`, `uv run pytest`, `uv run ruff`).
+- **Vitest `process.cwd()` Path Resolution**: Under `vitest run`, `process.cwd()` resolves to the individual project directory (e.g. `apps/dashboard-api`) instead of the workspace root. File lookups targeting workspace roots (`data/...`, `dist/...`) must search upwards recursively rather than assuming `resolve(process.cwd(), ...)`.
+- **`ng-openapi` in ESM Workspaces**: In ESM root workspaces (`"type": "module"`), name the config `openapi.config.cjs` using `require()`. Generated client output (`libs/shared/contracts/src/generated/`) emits `@ts-nocheck` directives; add `{ ignores: ["src/generated/**/*"] }` to the library's `eslint.config.mjs`.
+- **Kysely SQLite Integer Division & UTC Timestamps**: Template expressions `${bucketSeconds}` in Kysely `sql` strings parameterize values as SQLite binds, producing floating-point division. Wrap interval seconds with `sql.raw(bucketSeconds.toString())`. SQLite `datetime()` uses space separation; format as ISO UTC via `replace(datetime(...), ' ', 'T') || 'Z'`.
+- **NestJS Optional Providers in Vitest**: Optional constructor dependencies (e.g. `sqliteInstance?: Database.Database`) trigger `UnknownDependenciesException` in Vitest unless explicitly decorated with `@Optional()`.
 
 ## Commands
 
@@ -68,6 +72,8 @@ bunx nx serve <project>                             # run a project (dashboard-s
 bunx nx e2e <project>-e2e                           # run Playwright E2E tests
 bunx nx run agent-service:seed                      # generate synthetic source SQLite DB
 bunx nx run agent-service:etl                       # run ETL pipeline to build derived DB
+bunx nx run dashboard-api:export-openapi             # export OpenAPI spec to dist/apps/dashboard-api/openapi.json
+bunx nx run shared-contracts:generate-contracts     # generate Angular httpResource services from openapi.json
 cd apps/agent-service && uv sync                    # install Python dependencies
 cd apps/agent-service && uv run pytest              # run Python tests
 cd apps/agent-service && uv run ruff check .        # run Python linter

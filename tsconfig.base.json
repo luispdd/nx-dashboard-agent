@@ -17,6 +17,12 @@
       ],
       "@nx-dashboard-agent/shared-mfe-context": [
         "./libs/shared-mfe-context/src/index.ts"
+      ],
+      "shared-contracts": [
+        "./libs/shared/contracts/src/index.ts"
+      ],
+      "@nx-dashboard-agent/shared-contracts": [
+        "./libs/shared/contracts/src/index.ts"
       ]
     }
   }
