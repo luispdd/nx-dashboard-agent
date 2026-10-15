@@ -27,6 +27,7 @@
       "defaultConfiguration": "production"
     },
     "serve": {
+      "continuous": true,
       "executor": "@angular-architects/native-federation:build",
       "options": {
         "target": "dashboard-shell:serve-original:development",

@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from typing import Literal
 
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sse_starlette.sse import EventSourceResponse
 
 from agent_service.agent.orchestrator import AgentOrchestrator
@@ -21,9 +21,28 @@ class ChatMessage(BaseModel):
     content: str
 
 
+class TimeRangeContext(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    preset: str | None = None
+    from_ts: str | None = Field(default=None, alias="from")
+    to_ts: str | None = Field(default=None, alias="to")
+    points: int | None = None
+
+
+class DashboardContextModel(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    selected_metric: str | None = Field(default=None, alias="selectedMetric")
+    selected_devices: list[str] = Field(default_factory=list, alias="selectedDevices")
+    unit: str | None = None
+    time_range: TimeRangeContext | None = Field(default=None, alias="timeRange")
+
+
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1)
     timezone: str = Field(default="UTC")
+    context: DashboardContextModel | None = None
 
 
 @router.post("")
@@ -46,6 +65,7 @@ async def chat_stream(request: Request, body: ChatRequest) -> EventSourceRespons
             async for event in orchestrator.run(
                 messages=messages_dicts,
                 user_timezone=body.timezone,
+                context=body.context,
             ):
                 yield {
                     "event": event["event"],

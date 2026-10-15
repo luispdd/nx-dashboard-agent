@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { SeriesService, DeviceSeriesDto } from 'shared-contracts';
 import { CapabilitiesService } from '../../core/services/capabilities.service';
+import { DashboardContextService } from '../../core/services/dashboard-context.service';
 import {
   FilterBarComponent,
   TIME_RANGE_OPTIONS,
@@ -33,6 +34,7 @@ import { PerBoardStatsTableComponent } from './per-board-stats-table/per-board-s
 export class TrendsViewComponent implements OnInit {
   readonly capabilitiesService = inject(CapabilitiesService);
   private readonly seriesService = inject(SeriesService);
+  readonly contextService = inject(DashboardContextService);
 
   readonly selectedMetric = signal<string>('');
   readonly selectedDevice = signal<string>('all');
@@ -53,6 +55,7 @@ export class TrendsViewComponent implements OnInit {
       const metrics = this.capabilitiesService.metrics();
       if (metrics.length > 0 && !this.selectedMetric()) {
         this.selectedMetric.set(metrics[0].metric_key);
+        this.syncContext();
         this.fetchSeries();
       }
     });
@@ -60,12 +63,14 @@ export class TrendsViewComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.selectedMetric()) {
+      this.syncContext();
       this.fetchSeries();
     }
   }
 
   onFilterChanged(): void {
     this.savePreferences();
+    this.syncContext();
     this.fetchSeries();
   }
 
@@ -113,12 +118,27 @@ export class TrendsViewComponent implements OnInit {
       this.seriesData.set(res?.series ?? []);
       this.currentUnit.set(res?.unit ?? '');
       this.currentBucket.set(res?.bucket ?? bucket);
+      this.syncContext();
     } catch (err: unknown) {
       this.seriesError.set(err instanceof Error ? err.message : String(err));
       this.seriesData.set([]);
     } finally {
       this.isSeriesLoading.set(false);
     }
+  }
+
+  private syncContext(): void {
+    const allDevices = this.capabilitiesService.devices().map((d) => d.device_id);
+    this.contextService.syncFromTrends({
+      metric: this.selectedMetric(),
+      device: this.selectedDevice(),
+      range: this.selectedRange(),
+      points: this.selectedPoints(),
+      unit:
+        this.currentUnit() ||
+        (this.capabilitiesService.getMetricOption(this.selectedMetric())?.unit ?? ''),
+      availableDevices: allDevices,
+    });
   }
 
   private savePreferences(): void {

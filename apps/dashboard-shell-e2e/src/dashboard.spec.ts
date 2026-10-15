@@ -194,4 +194,24 @@ test.describe('Dashboard Shell E2E', () => {
       'saved successfully'
     );
   });
+
+  test('should open chat drawer and successfully mount the chat microfrontend via Native Federation', async ({ page }) => {
+    await page.goto('/');
+
+    // Click AI Assistant button in header
+    const toggleBtn = page.locator('[data-testid="toggle-chat-button"]');
+    await toggleBtn.click();
+
+    // Verify chat drawer opens
+    const drawer = page.locator('[data-testid="chat-drawer"]');
+    await expect(drawer).toBeVisible();
+
+    // Verify chat container mounts and no error occurs
+    const chatContainer = page.locator('[data-testid="chat-container"]');
+    await expect(chatContainer).toBeVisible();
+
+    // Verify no error state is displayed
+    await expect(page.locator('[data-testid="chat-error"]')).not.toBeVisible();
+    await expect(page.getByText(/Failed to load chat microfrontend/i)).not.toBeVisible();
+  });
 });

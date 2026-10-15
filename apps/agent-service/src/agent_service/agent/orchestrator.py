@@ -35,11 +35,15 @@ class AgentOrchestrator:
         self,
         messages: list[dict[str, Any]],
         user_timezone: str = "UTC",
+        context: Any | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Executes a multi-turn sequential tool calling loop yielding SSE event dictionaries."""
         # Initialize conversation history with system prompt
         history: list[dict[str, Any]] = [
-            {"role": "system", "content": build_system_prompt(user_timezone=user_timezone)}
+            {
+                "role": "system",
+                "content": build_system_prompt(user_timezone=user_timezone, context=context),
+            }
         ]
         history.extend(messages)
 

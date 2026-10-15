@@ -144,4 +144,19 @@ describe('TrendsViewComponent', () => {
     expect(component.seriesData()).toEqual(mockSeriesResponse.series);
     expect(component.currentUnit()).toBe('°C');
   });
+
+  it('should synchronize active context into DashboardContextService on filter change', async () => {
+    await capabilitiesService.loadCatalog();
+    fixture.detectChanges();
+
+    component.selectedMetric.set('humidity');
+    component.selectedDevice.set('esp32s3');
+    component.selectedRange.set('7d');
+    component.onFilterChanged();
+
+    const context = component.contextService.activeContext();
+    expect(context.selectedMetric).toBe('humidity');
+    expect(context.selectedDevices).toEqual(['esp32s3']);
+    expect(context.timeRange?.preset).toBe('7d');
+  });
 });

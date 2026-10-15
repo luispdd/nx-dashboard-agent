@@ -74,6 +74,9 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **Async Task Cancellation Assertions**: `task.cancel()` sets `task.cancelling() > 0` immediately, but `task.cancelled()` evaluates to `True` only after the event loop runs. In tests verifying task cancellation, yield to the event loop via `await asyncio.sleep(0)` before asserting `assert task.cancelled()`.
 - **Python Loop Variable Binding in Closures (Ruff B023)**: Defining inner helper functions or closures inside loops that reference the loop iteration variable triggers Ruff `B023` and causes late-binding bugs. Bind loop variables explicitly as default parameter values (e.g. `def flush(dev=dev_id):`) or pass them as direct arguments.
 - **LLM Tool Pydantic Schema Strictness (`extra="forbid"`)**: For tool function parameter definitions, Pydantic schemas must specify `model_config = ConfigDict(extra="forbid")`. This emits `"additionalProperties": false` in JSON Schema, preventing small or local LLMs from hallucinating unrecognized arguments that fail validation.
+- **Vite Dev Server Remote Entry MIME Type**: Vite dev mode serves on-demand without building `remoteEntry.js` to disk. Dynamic host imports fall back to `index.html` (`text/html`), causing browser errors (`Unsupported Content-Type "text/html"`). Fix by adding a custom dev middleware in `vite.config.mts` to serve `remoteEntry.js` and build assets with `application/javascript` and CORS headers, plus adding `"dependsOn": ["build"]` to `serve` in `project.json`.
+- **Nx Multi-Project Serve Streaming**: `nx run-many -t serve` displays spinners indefinitely in interactive TUI mode because dev servers are continuous daemons. Pass `--outputStyle=stream` to view real-time startup logs and port bindings.
+- **Playwright Multi-WebServer for MFEs**: When testing an MFE host that loads remotes dynamically, configure `webServer` in `playwright.config.mts` as an array (host + remotes) with `reuseExistingServer: true` so all endpoints are up before tests execute.
 
 ## Commands
 
@@ -81,6 +84,7 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 bun install                                         # install JS dependencies
 nx affected -t lint test build                      # lint, test, build what changed
 nx serve <project>                                  # run a project (dashboard-shell, chat-mfe, dashboard-api, agent-service)
+nx run-many -t serve --outputStyle=stream           # run all dev servers simultaneously with real-time logs
 nx e2e <project>-e2e                                # run Playwright E2E tests
 nx run agent-service:seed                           # generate synthetic source SQLite DB
 nx run agent-service:etl                            # run ETL pipeline to build derived DB

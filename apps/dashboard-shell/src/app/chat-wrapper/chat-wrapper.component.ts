@@ -5,13 +5,15 @@ import {
   DestroyRef,
   inject,
   signal,
+  effect,
   viewChild,
 } from '@angular/core';
 import { loadRemoteModule } from '@angular-architects/native-federation';
 import {
-  createDefaultDashboardContext,
-  type DashboardContext,
+  type DashboardContextListener,
+  type MountOptions,
 } from 'shared-mfe-context';
+import { DashboardContextService } from '../core/services/dashboard-context.service';
 
 @Component({
   selector: 'app-chat-wrapper',
@@ -21,11 +23,24 @@ import {
 })
 export class ChatWrapperComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly contextService = inject(DashboardContextService);
+
   protected readonly container =
     viewChild<ElementRef<HTMLDivElement>>('chatContainer');
   protected readonly status = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly errorMessage = signal<string | null>(null);
+
   private unmountFn: (() => void) | null = null;
+  private contextListener: DashboardContextListener | null = null;
+
+  constructor() {
+    effect(() => {
+      const activeCtx = this.contextService.activeContext();
+      if (this.contextListener) {
+        this.contextListener(activeCtx);
+      }
+    });
+  }
 
   async ngOnInit(): Promise<void> {
     try {
@@ -37,13 +52,23 @@ export class ChatWrapperComponent implements OnInit {
       const remoteModule = await loadRemoteModule<{
         mount: (
           el: HTMLElement,
-          options?: { context?: DashboardContext }
+          options?: MountOptions
         ) => () => void;
       }>('chat-mfe', './Chat');
 
       if (remoteModule && typeof remoteModule.mount === 'function') {
-        const context = createDefaultDashboardContext();
-        this.unmountFn = remoteModule.mount(containerEl, { context });
+        const initialContext = this.contextService.activeContext();
+        this.unmountFn = remoteModule.mount(containerEl, {
+          context: initialContext,
+          onContextChange: (listener: DashboardContextListener) => {
+            this.contextListener = listener;
+            return () => {
+              if (this.contextListener === listener) {
+                this.contextListener = null;
+              }
+            };
+          },
+        });
         this.status.set('ready');
       } else {
         throw new Error('Remote module did not export a mount function');
@@ -54,6 +79,7 @@ export class ChatWrapperComponent implements OnInit {
     }
 
     this.destroyRef.onDestroy(() => {
+      this.contextListener = null;
       if (this.unmountFn) {
         this.unmountFn();
       }
