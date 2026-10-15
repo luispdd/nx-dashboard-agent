@@ -123,7 +123,9 @@ def generate_synthetic_database(
         flatline_values: dict[tuple[str, str], float] = {}
 
         for step in range(total_intervals):
-            current_time = cfg.start_time + timedelta(minutes=step * cfg.interval_minutes)
+            current_time = cfg.start_time + timedelta(
+                minutes=step * cfg.interval_minutes
+            )
             # Timestamp format in source: YYYY-MM-DDTHH:MM:SS (UTC+0 without Z suffix)
             ts_str = current_time.strftime("%Y-%m-%dT%H:%M:%S")
             minutes_from_start = step * cfg.interval_minutes
@@ -131,8 +133,12 @@ def generate_synthetic_database(
 
             # Base diurnal cycle: sinusoidal daily variation
             diurnal_rad = 2 * math.pi * (time_of_day_seconds / 86400.0)
-            base_temp = 20.0 + 5.0 * math.sin(diurnal_rad - math.pi / 2)  # Peak in afternoon
-            base_humidity = 55.0 - 15.0 * math.sin(diurnal_rad - math.pi / 2)  # Inverted with temp
+            base_temp = 20.0 + 5.0 * math.sin(
+                diurnal_rad - math.pi / 2
+            )  # Peak in afternoon
+            base_humidity = 55.0 - 15.0 * math.sin(
+                diurnal_rad - math.pi / 2
+            )  # Inverted with temp
             base_pressure = 1013.25 + 2.0 * math.cos(diurnal_rad)
 
             for dev_id in cfg.devices:
@@ -140,7 +146,8 @@ def generate_synthetic_database(
                 is_gap = any(
                     a.anomaly_type == "gap"
                     and a.device_id == dev_id
-                    and a.start_offset_minutes <= minutes_from_start
+                    and a.start_offset_minutes
+                    <= minutes_from_start
                     < (a.start_offset_minutes + a.duration_minutes)
                     for a in cfg.anomalies
                 )
@@ -159,7 +166,8 @@ def generate_synthetic_database(
                 for anom in cfg.anomalies:
                     if (
                         anom.device_id == dev_id
-                        and anom.start_offset_minutes <= minutes_from_start
+                        and anom.start_offset_minutes
+                        <= minutes_from_start
                         < (anom.start_offset_minutes + anom.duration_minutes)
                     ):
                         if anom.anomaly_type == "peer_deviation":
@@ -178,7 +186,9 @@ def generate_synthetic_database(
                             key = (anom.device_id, anom.metric_key)
                             if key not in flatline_values:
                                 flatline_values[key] = (
-                                    temp_val if anom.metric_key == "temperature" else hum_val
+                                    temp_val
+                                    if anom.metric_key == "temperature"
+                                    else hum_val
                                 )
                             if anom.metric_key == "temperature":
                                 temp_val = flatline_values[key]
@@ -190,9 +200,9 @@ def generate_synthetic_database(
                     "humidity": hum_val,
                     "pressure": press_val,
                 }
-                ingested_at = (current_time + timedelta(seconds=rng.randint(1, 15))).strftime(
-                    "%Y-%m-%dT%H:%M:%S"
-                )
+                ingested_at = (
+                    current_time + timedelta(seconds=rng.randint(1, 15))
+                ).strftime("%Y-%m-%dT%H:%M:%S")
 
                 readings_rows.append(
                     (ts_str, dev_id, json.dumps(metrics_dict), ingested_at, 0)
@@ -200,7 +210,9 @@ def generate_synthetic_database(
 
                 # Occasional on-demand reading shortly after
                 if rng.random() < cfg.on_demand_rate:
-                    on_demand_time = current_time + timedelta(seconds=rng.randint(30, 90))
+                    on_demand_time = current_time + timedelta(
+                        seconds=rng.randint(30, 90)
+                    )
                     od_ts_str = on_demand_time.strftime("%Y-%m-%dT%H:%M:%S")
                     od_metrics = {
                         "temperature": round(temp_val + rng.gauss(0, 0.1), 2),
@@ -228,7 +240,11 @@ def generate_synthetic_database(
         # 3. Populate sync_state
         conn.execute(
             "INSERT INTO sync_state (logger_id, last_cursor, last_synced_at) VALUES (?, ?, ?)",
-            ("main_syncer", len(readings_rows), cfg.start_time.strftime("%Y-%m-%dT%H:%M:%S")),
+            (
+                "main_syncer",
+                len(readings_rows),
+                cfg.start_time.strftime("%Y-%m-%dT%H:%M:%S"),
+            ),
         )
         conn.commit()
 

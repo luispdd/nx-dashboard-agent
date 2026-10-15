@@ -47,7 +47,9 @@ def decrypt_secret(encrypted_text: str, secret: str | None = None) -> str:
     payload = encrypted_text[len(ENCRYPTION_PREFIX) :]
     parts = payload.split(":")
     if len(parts) != 3:
-        raise ValueError("Malformed encrypted secret format. Expected <nonce>:<tag>:<ciphertext>")
+        raise ValueError(
+            "Malformed encrypted secret format. Expected <nonce>:<tag>:<ciphertext>"
+        )
 
     nonce_hex, tag_hex, ciphertext_hex = parts
     nonce = bytes.fromhex(nonce_hex)

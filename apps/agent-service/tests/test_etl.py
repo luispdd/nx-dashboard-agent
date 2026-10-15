@@ -87,7 +87,9 @@ def test_run_etl_end_to_end(tmp_path: Path) -> None:
     conn = sqlite3.connect(str(derived_db))
 
     # Verify catalog
-    catalog = dict(conn.execute("SELECT metric_key, unit FROM metrics_catalog").fetchall())
+    catalog = dict(
+        conn.execute("SELECT metric_key, unit FROM metrics_catalog").fetchall()
+    )
     assert catalog["temperature"] == "°C"
     assert catalog["humidity"] == "%"
     assert catalog["pressure"] == "hPa"
@@ -105,10 +107,7 @@ def test_run_etl_end_to_end(tmp_path: Path) -> None:
 
     # Verify index exists
     indexes = [
-        r[1]
-        for r in conn.execute(
-            "PRAGMA index_list('measurements')"
-        ).fetchall()
+        r[1] for r in conn.execute("PRAGMA index_list('measurements')").fetchall()
     ]
     assert "idx_measurements_series" in indexes
 
@@ -127,7 +126,13 @@ def test_run_etl_rejects_undeclared_metrics(tmp_path: Path) -> None:
     # Reading contains 'light_level' not declared in sensor_capabilities
     conn.execute(
         "INSERT INTO readings (timestamp, device_id, metrics, ingested_at, is_fine_tuned) VALUES (?, ?, ?, ?, ?)",
-        ("2026-10-05T08:00:00", "esp1", json.dumps({"temp": 22.0, "light_level": 450}), "2026-10-05T08:00:05", 0),
+        (
+            "2026-10-05T08:00:00",
+            "esp1",
+            json.dumps({"temp": 22.0, "light_level": 450}),
+            "2026-10-05T08:00:05",
+            0,
+        ),
     )
     conn.commit()
     conn.close()

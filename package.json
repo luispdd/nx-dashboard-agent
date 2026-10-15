@@ -3,6 +3,23 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "start": "nx run-many -t serve --projects=dashboard-shell,dashboard-api,chat-mfe",
+    "serve": "nx run-many -t serve --projects=dashboard-shell,dashboard-api,chat-mfe",
+    "serve:all": "nx run-many -t serve",
+    "serve:shell": "nx serve dashboard-shell",
+    "serve:api": "nx serve dashboard-api",
+    "serve:chat": "nx serve chat-mfe",
+    "serve:agent": "nx serve agent-service",
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "lint": "nx run-many -t lint",
+    "e2e": "nx run-many -t e2e",
+    "affected": "nx affected -t lint test build",
+    "etl": "nx run agent-service:etl",
+    "export:openapi": "nx run dashboard-api:export-openapi",
+    "generate:contracts": "nx run shared-contracts:generate-contracts"
+  },
   "devDependencies": {
     "@angular-architects/native-federation": "~22.2.2",
     "@angular-devkit/core": "~22.2.2",

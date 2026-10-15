@@ -176,10 +176,14 @@ def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummar
 
             try:
                 metrics_dict = (
-                    json.loads(metrics_raw) if isinstance(metrics_raw, str) else metrics_raw
+                    json.loads(metrics_raw)
+                    if isinstance(metrics_raw, str)
+                    else metrics_raw
                 )
             except Exception as err:
-                raise ValueError(f"Malformed JSON in reading id at {raw_ts}: {metrics_raw}") from err
+                raise ValueError(
+                    f"Malformed JSON in reading id at {raw_ts}: {metrics_raw}"
+                ) from err
 
             for m_key, val in metrics_dict.items():
                 norm_m_key = METRIC_KEY_NORMALIZATIONS.get(m_key.strip(), m_key.strip())
@@ -189,7 +193,9 @@ def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummar
                     )
 
                 float_val = float(val) if val is not None else None
-                measurements_batch.append((ts_norm, dev_id, norm_m_key, float_val, sampling))
+                measurements_batch.append(
+                    (ts_norm, dev_id, norm_m_key, float_val, sampling)
+                )
 
                 if len(measurements_batch) >= 5000:
                     dest_conn.executemany(
@@ -219,7 +225,9 @@ def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummar
         )
         dest_conn.commit()
 
-        measurements_count = dest_conn.execute("SELECT count(*) FROM measurements").fetchone()[0]
+        measurements_count = dest_conn.execute(
+            "SELECT count(*) FROM measurements"
+        ).fetchone()[0]
 
     finally:
         source_conn.close()
@@ -240,7 +248,9 @@ def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummar
 
 def main() -> None:
     default_src, default_dst = resolve_default_paths()
-    parser = argparse.ArgumentParser(description="ETL migration from source database to derived database")
+    parser = argparse.ArgumentParser(
+        description="ETL migration from source database to derived database"
+    )
     parser.add_argument(
         "--source",
         "-s",

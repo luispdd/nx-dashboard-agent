@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
-agent-service = "agent_service:main"
+agent-service = "agent_service.main:main"
 seed = "agent_service.data.generate_seed:main"
 etl = "agent_service.data.etl:main"
 

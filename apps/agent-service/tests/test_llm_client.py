@@ -14,7 +14,9 @@ from agent_service.llm_client import (
 
 def test_normalize_base_url() -> None:
     assert normalize_base_url("http://127.0.0.1:8888/api") == "http://127.0.0.1:8888/v1"
-    assert normalize_base_url("http://127.0.0.1:8888/api/") == "http://127.0.0.1:8888/v1"
+    assert (
+        normalize_base_url("http://127.0.0.1:8888/api/") == "http://127.0.0.1:8888/v1"
+    )
     assert normalize_base_url("http://127.0.0.1:8888/v1") == "http://127.0.0.1:8888/v1"
 
 

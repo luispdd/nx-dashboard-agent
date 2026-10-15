@@ -72,15 +72,21 @@ class Settings(BaseSettings):
             if llm_config.get("model"):
                 self.llm_model = str(llm_config["model"])
 
-            encrypted_key = llm_config.get("api_key_encrypted") or llm_config.get("api_key")
+            encrypted_key = llm_config.get("api_key_encrypted") or llm_config.get(
+                "api_key"
+            )
             if encrypted_key:
                 self.llm_api_key = decrypt_secret(str(encrypted_key))
         except Exception as err:  # noqa: BLE001
-            logger.warning("Failed to load runtime configuration from %s: %s", target_path, err)
+            logger.warning(
+                "Failed to load runtime configuration from %s: %s", target_path, err
+            )
 
 
 def get_settings(runtime_config_path: str | Path | None = None) -> Settings:
-    return Settings(runtime_config_path=str(runtime_config_path) if runtime_config_path else None)
+    return Settings(
+        runtime_config_path=str(runtime_config_path) if runtime_config_path else None
+    )
 
 
 settings = Settings()

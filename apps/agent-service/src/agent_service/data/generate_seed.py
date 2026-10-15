@@ -28,7 +28,9 @@ def resolve_default_output() -> Path:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate synthetic IoT source database")
+    parser = argparse.ArgumentParser(
+        description="Generate synthetic IoT source database"
+    )
     parser.add_argument(
         "--output",
         "-o",
