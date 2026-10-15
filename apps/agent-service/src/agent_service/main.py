@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from agent_service.api.chat import router as chat_router
 from agent_service.config import Settings, get_settings
 from agent_service.session_manager import SessionManager, get_session_manager
 
@@ -33,11 +34,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     session_mgr = getattr(app.state, "session_manager", None)
     if session_mgr:
         session_mgr.clear()
+    dash_client = getattr(app.state, "dashboard_client", None)
+    if dash_client and hasattr(dash_client, "close"):
+        await dash_client.close()
 
 
 def create_app(
     custom_settings: Settings | None = None,
     session_manager: SessionManager | None = None,
+    llm_client: Any | None = None,
+    dashboard_client: Any | None = None,
+    tool_registry: Any | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="Agent Service",
@@ -48,6 +55,9 @@ def create_app(
 
     app.state.session_manager = session_manager or get_session_manager()
     app.state.settings = custom_settings
+    app.state.llm_client = llm_client
+    app.state.dashboard_client = dashboard_client
+    app.state.tool_registry = tool_registry
 
     app.add_middleware(
         CORSMiddleware,
@@ -56,6 +66,8 @@ def create_app(
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    app.include_router(chat_router)
 
     @app.get("/health", response_model=HealthResponse)
     async def health_check(request: Request) -> dict[str, Any]:

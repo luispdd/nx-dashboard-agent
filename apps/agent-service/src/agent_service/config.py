@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_model: str = ""
     llm_api_key: str = ""
+    dashboard_api_url: str = "http://localhost:3000"
     runtime_config_path: str | None = None
 
     def model_post_init(self, context: Any, /) -> None:

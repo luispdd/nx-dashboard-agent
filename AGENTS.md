@@ -72,6 +72,8 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **Python Package Submodule Shadowing in `__init__.py`**: Importing a callable with the same name as a submodule in `__init__.py` (e.g. `from agent_service.main import main`) shadows the module attribute, breaking Uvicorn target resolution (`uvicorn agent_service.main:app` fails with `AttributeError: 'function' object has no attribute 'app'`). Export `app` and `create_app` or alias entrypoint functions instead.
 - **FastAPI Lifespan & `TestClient` in Unit Tests**: Bare `httpx.AsyncClient(transport=ASGITransport(app))` does not trigger FastAPI async lifespan context managers. Use `TestClient(app)` from `fastapi.testclient` as a context manager (`with TestClient(app):`) to execute startup and shutdown hooks deterministically in tests.
 - **Async Task Cancellation Assertions**: `task.cancel()` sets `task.cancelling() > 0` immediately, but `task.cancelled()` evaluates to `True` only after the event loop runs. In tests verifying task cancellation, yield to the event loop via `await asyncio.sleep(0)` before asserting `assert task.cancelled()`.
+- **Python Loop Variable Binding in Closures (Ruff B023)**: Defining inner helper functions or closures inside loops that reference the loop iteration variable triggers Ruff `B023` and causes late-binding bugs. Bind loop variables explicitly as default parameter values (e.g. `def flush(dev=dev_id):`) or pass them as direct arguments.
+- **LLM Tool Pydantic Schema Strictness (`extra="forbid"`)**: For tool function parameter definitions, Pydantic schemas must specify `model_config = ConfigDict(extra="forbid")`. This emits `"additionalProperties": false` in JSON Schema, preventing small or local LLMs from hallucinating unrecognized arguments that fail validation.
 
 ## Commands
 
@@ -82,6 +84,7 @@ nx serve <project>                                  # run a project (dashboard-s
 nx e2e <project>-e2e                                # run Playwright E2E tests
 nx run agent-service:seed                           # generate synthetic source SQLite DB
 nx run agent-service:etl                            # run ETL pipeline to build derived DB
+nx run agent-service:eval                           # run agent evaluation benchmark against active LLM
 nx run dashboard-api:export-openapi                 # export OpenAPI spec to dist/apps/dashboard-api/openapi.json
 nx run shared-contracts:generate-contracts          # generate Angular httpResource services from openapi.json
 cd apps/agent-service && uv sync                    # install Python dependencies

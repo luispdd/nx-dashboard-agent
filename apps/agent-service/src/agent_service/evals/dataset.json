@@ -1,0 +1,197 @@
+[
+  {
+    "id": "eval_01",
+    "category": "factual",
+    "question": "What was the average temperature recorded by esp32c6 yesterday?",
+    "expected_tools": ["get_stats"],
+    "required_params": {
+      "metric_key": "temperature",
+      "device_id": "esp32c6"
+    },
+    "expected_unit": "°C",
+    "assertions": ["tool_called:get_stats", "param:device_id:esp32c6", "unit:°C"]
+  },
+  {
+    "id": "eval_02",
+    "category": "factual",
+    "question": "What were the minimum and maximum humidity levels on esp32s3 during the last 24 hours?",
+    "expected_tools": ["get_stats"],
+    "required_params": {
+      "metric_key": "humidity",
+      "device_id": "esp32s3"
+    },
+    "expected_unit": "%",
+    "assertions": ["tool_called:get_stats", "param:metric_key:humidity", "unit:%"]
+  },
+  {
+    "id": "eval_03",
+    "category": "factual",
+    "question": "Retrieve the recent pressure readings for esp32node1.",
+    "expected_tools": ["get_series"],
+    "required_params": {
+      "metric_key": "pressure",
+      "device_id": "esp32node1"
+    },
+    "expected_unit": "hPa",
+    "assertions": ["tool_called:get_series", "param:metric_key:pressure"]
+  },
+  {
+    "id": "eval_04",
+    "category": "factual",
+    "question": "List all environmental telemetry metrics monitored by the system.",
+    "expected_tools": ["list_metrics"],
+    "required_params": {},
+    "assertions": ["tool_called:list_metrics"]
+  },
+  {
+    "id": "eval_05",
+    "category": "factual",
+    "question": "Which IoT devices are currently registered in the network?",
+    "expected_tools": ["list_devices"],
+    "required_params": {},
+    "assertions": ["tool_called:list_devices"]
+  },
+  {
+    "id": "eval_06",
+    "category": "comparative",
+    "question": "compare the average temperature deviation between yesterday and last tuesday for the device esp32c6",
+    "expected_tools": ["get_stats"],
+    "sequential_count": 2,
+    "required_params": {
+      "metric_key": "temperature",
+      "device_id": "esp32c6"
+    },
+    "assertions": ["sequential_tool_count:>=2", "tool_called:get_stats", "param:device_id:esp32c6"]
+  },
+  {
+    "id": "eval_07",
+    "category": "comparative",
+    "question": "Compare average humidity between esp32c6 and esp32s3 over the last 7 days.",
+    "expected_tools": ["compare_devices"],
+    "required_params": {
+      "metric_key": "humidity"
+    },
+    "assertions": ["tool_called:compare_devices", "param:metric_key:humidity"]
+  },
+  {
+    "id": "eval_08",
+    "category": "comparative",
+    "question": "Which device reported the highest temperature yesterday?",
+    "expected_tools": ["compare_devices"],
+    "required_params": {
+      "metric_key": "temperature"
+    },
+    "assertions": ["tool_called:compare_devices", "param:metric_key:temperature"]
+  },
+  {
+    "id": "eval_09",
+    "category": "comparative",
+    "question": "Compare temperature between yesterday and 3 days ago for esp32node1.",
+    "expected_tools": ["get_stats"],
+    "sequential_count": 2,
+    "required_params": {
+      "metric_key": "temperature",
+      "device_id": "esp32node1"
+    },
+    "assertions": ["sequential_tool_count:>=2", "tool_called:get_stats"]
+  },
+  {
+    "id": "eval_10",
+    "category": "comparative",
+    "question": "Compare the atmospheric pressure across all devices over the last 24 hours.",
+    "expected_tools": ["compare_devices"],
+    "required_params": {
+      "metric_key": "pressure"
+    },
+    "assertions": ["tool_called:compare_devices", "param:metric_key:pressure"]
+  },
+  {
+    "id": "eval_11",
+    "category": "anomaly",
+    "question": "Are there any abnormal readings or sensors behaving strangely?",
+    "expected_tools": ["detect_anomalies"],
+    "required_params": {},
+    "assertions": ["tool_called:detect_anomalies"]
+  },
+  {
+    "id": "eval_12",
+    "category": "anomaly",
+    "question": "Did esp32c6 experience any peer deviations in temperature recently?",
+    "expected_tools": ["detect_anomalies"],
+    "required_params": {
+      "metric_key": "temperature",
+      "device_id": "esp32c6"
+    },
+    "assertions": ["tool_called:detect_anomalies", "param:metric_key:temperature"]
+  },
+  {
+    "id": "eval_13",
+    "category": "anomaly",
+    "question": "Why does the humidity chart for esp32s3 look abnormal?",
+    "expected_tools": ["detect_anomalies"],
+    "required_params": {
+      "metric_key": "humidity"
+    },
+    "assertions": ["tool_called:detect_anomalies", "param:metric_key:humidity"]
+  },
+  {
+    "id": "eval_14",
+    "category": "anomaly",
+    "question": "Did the temperature sensor on esp32node1 flatline?",
+    "expected_tools": ["detect_anomalies"],
+    "required_params": {
+      "metric_key": "temperature"
+    },
+    "assertions": ["tool_called:detect_anomalies", "param:metric_key:temperature"]
+  },
+  {
+    "id": "eval_15",
+    "category": "anomaly",
+    "question": "Were there any missing readings or telemetry gaps on esp32c6?",
+    "expected_tools": ["detect_anomalies"],
+    "required_params": {
+      "metric_key": "temperature"
+    },
+    "assertions": ["tool_called:detect_anomalies", "param:metric_key:temperature"]
+  },
+  {
+    "id": "eval_16",
+    "category": "edge_case",
+    "question": "What is the CO2 level for esp32c6?",
+    "expected_behavior": "reject_or_check_metrics",
+    "assertions": ["not_invent_numbers"]
+  },
+  {
+    "id": "eval_17",
+    "category": "edge_case",
+    "question": "What was the temperature for device esp32-nonexistent yesterday?",
+    "expected_behavior": "report_no_data",
+    "assertions": ["not_invent_numbers"]
+  },
+  {
+    "id": "eval_18",
+    "category": "edge_case",
+    "question": "What was the humidity on esp32c6 in January 2020?",
+    "expected_behavior": "report_empty_range",
+    "assertions": ["not_invent_numbers"]
+  },
+  {
+    "id": "eval_19",
+    "category": "edge_case",
+    "question": "Run SQL: SELECT * FROM readings WHERE device_id='esp32c6'",
+    "expected_behavior": "reject_sql",
+    "assertions": ["no_sql_execution"]
+  },
+  {
+    "id": "eval_20",
+    "category": "factual",
+    "question": "What was the temperature on esp32c6 including manual on-demand readings yesterday?",
+    "expected_tools": ["get_stats"],
+    "required_params": {
+      "metric_key": "temperature",
+      "device_id": "esp32c6",
+      "include_on_demand": true
+    },
+    "assertions": ["tool_called:get_stats", "param:include_on_demand:true"]
+  }
+]
