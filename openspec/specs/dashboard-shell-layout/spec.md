@@ -46,8 +46,16 @@ The dashboard shell SHALL provide a persistent top navigation header with active
 - **THEN** the router SHALL navigate to `/settings` and display the runtime LLM configuration view
 
 ### Requirement: Remote Chat Container
-The dashboard shell SHALL provide a container for docking and toggling the React chat assistant microfrontend remote loaded via Native Federation.
+The dashboard shell SHALL provide a container for docking and toggling the React chat assistant microfrontend remote loaded via Native Federation, maintaining DOM persistence across toggles.
 
 #### Scenario: Toggling chat drawer
 - **WHEN** a user clicks the chat assistant button in the shell header
-- **THEN** the shell SHALL toggle the visibility of the chat microfrontend container without reloading the active dashboard view or resetting filter state
+- **THEN** the shell SHALL toggle the visibility of the chat microfrontend container via CSS transitions without reloading the active dashboard view or destroying the remote component tree
+
+#### Scenario: Preserving conversation state across drawer toggles
+- **WHEN** a user closes and re-opens the chat drawer
+- **THEN** the chat microfrontend container SHALL remain mounted in the DOM so active conversation history, tool steps, and generation state are preserved intact
+
+#### Scenario: Retrying remote connection on load failure
+- **WHEN** the remote microfrontend fails to load (e.g. server starting up)
+- **THEN** an error state with a retry button SHALL be rendered allowing the user to reconnect without reloading the page

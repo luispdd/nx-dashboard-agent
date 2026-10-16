@@ -29,8 +29,8 @@ The shared context contract SHALL define mount options for micro frontend remote
 - **THEN** the host invokes registered listener callbacks with the new `DashboardContext`, allowing the remote to re-render or update state in real-time
 
 ### Requirement: Default Context Fallback Initialization
-The shared context library SHALL provide a default context factory function (`createDefaultDashboardContext`) ensuring standalone remotes and unconfigured hosts initialize with valid baseline filters.
+The shared context library SHALL provide default context factory functions (`createDefaultContainerContext` and `createDefaultDashboardContext`) ensuring standalone remotes and unconfigured hosts initialize with valid baseline filters decoupled from a specific host application.
 
 #### Scenario: Standalone remote execution fallback
 - **WHEN** a micro frontend remote runs standalone in development without host options
-- **THEN** `createDefaultDashboardContext()` provides fallback default devices and a 24-hour time range preset
+- **THEN** `createDefaultContainerContext()` (or `createDefaultDashboardContext()`) provides fallback default devices and a 24-hour time range preset

@@ -43,6 +43,23 @@ export class ChatWrapperComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    await this.mountRemote();
+
+    this.destroyRef.onDestroy(() => {
+      this.contextListener = null;
+      if (this.unmountFn) {
+        this.unmountFn();
+      }
+    });
+  }
+
+  async retry(): Promise<void> {
+    this.status.set('loading');
+    this.errorMessage.set(null);
+    await this.mountRemote();
+  }
+
+  private async mountRemote(): Promise<void> {
     try {
       const containerEl = this.container()?.nativeElement;
       if (!containerEl) {
@@ -77,12 +94,5 @@ export class ChatWrapperComponent implements OnInit {
       this.status.set('error');
       this.errorMessage.set(err instanceof Error ? err.message : String(err));
     }
-
-    this.destroyRef.onDestroy(() => {
-      this.contextListener = null;
-      if (this.unmountFn) {
-        this.unmountFn();
-      }
-    });
   }
 }

@@ -8,41 +8,47 @@
     <router-outlet></router-outlet>
   </main>
 
-  <!-- Slide-over / Docked Chat Drawer -->
-  @if (isChatOpen()) {
-    <button
-      type="button"
-      class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity border-none cursor-default"
-      (click)="closeChat()"
-      aria-label="Close chat backdrop"
-    ></button>
+  <!-- Slide-over / Docked Chat Backdrop -->
+  <button
+    type="button"
+    class="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity duration-300 border-none cursor-default"
+    [class.opacity-100]="isChatOpen()"
+    [class.opacity-0]="!isChatOpen()"
+    [class.pointer-events-none]="!isChatOpen()"
+    (click)="closeChat()"
+    aria-label="Close chat backdrop"
+    tabindex="-1"
+  ></button>
 
-    <aside
-      class="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] bg-card border-l border-theme z-50 flex flex-col shadow-2xl transition-transform"
-      data-testid="chat-drawer"
-    >
-      <div class="h-16 px-5 border-b border-theme flex items-center justify-between bg-rail/40">
-        <div class="flex items-center gap-2.5">
-          <span class="material-symbols-outlined text-accent text-[20px]">smart_toy</span>
-          <div>
-            <h2 class="text-sm font-semibold text-white leading-tight">AI Assistant</h2>
-            <p class="text-[10px] text-text-muted font-mono">React MFE via Native Federation</p>
-          </div>
+  <aside
+    class="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] bg-card border-l border-theme z-50 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out"
+    [class.translate-x-0]="isChatOpen()"
+    [class.translate-x-full]="!isChatOpen()"
+    [attr.aria-hidden]="!isChatOpen()"
+    [attr.inert]="!isChatOpen() ? '' : null"
+    data-testid="chat-drawer"
+  >
+    <div class="h-16 px-5 border-b border-theme flex items-center justify-between bg-rail/40">
+      <div class="flex items-center gap-2.5">
+        <span class="material-symbols-outlined text-accent text-[20px]">smart_toy</span>
+        <div>
+          <h2 class="text-sm font-semibold text-white leading-tight">AI Assistant</h2>
+          <p class="text-[10px] text-text-muted font-mono">React MFE via Native Federation</p>
         </div>
-        <button
-          type="button"
-          (click)="closeChat()"
-          class="w-8 h-8 rounded-lg border border-theme bg-rail flex items-center justify-center text-text-muted hover:text-white transition-colors"
-          data-testid="close-chat-button"
-          aria-label="Close Assistant"
-        >
-          <span class="material-symbols-outlined text-[18px]">close</span>
-        </button>
       </div>
+      <button
+        type="button"
+        (click)="closeChat()"
+        class="w-8 h-8 rounded-lg border border-theme bg-rail flex items-center justify-center text-text-muted hover:text-white transition-colors cursor-pointer"
+        data-testid="close-chat-button"
+        aria-label="Close Assistant"
+      >
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
 
-      <div class="flex-1 overflow-hidden p-4">
-        <app-chat-wrapper></app-chat-wrapper>
-      </div>
-    </aside>
-  }
+    <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+      <app-chat-wrapper class="flex-1 flex flex-col min-h-0"></app-chat-wrapper>
+    </div>
+  </aside>
 </div>

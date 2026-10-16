@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 DEFAULT_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://localhost:4204",
+    "http://127.0.0.1:4200",
+    "http://127.0.0.1:4204",
 ]
 
 

@@ -3,8 +3,16 @@
     <div class="chat-loading" data-testid="chat-loading">Connecting to chat microfrontend...</div>
   }
   @if (status() === 'error') {
-    <div class="chat-error" data-testid="chat-error">
-      Failed to load chat microfrontend: {{ errorMessage() }}
+    <div class="chat-error flex flex-col items-start gap-2 p-4 text-xs font-mono" data-testid="chat-error">
+      <div class="text-rose-400">Failed to load chat microfrontend: {{ errorMessage() }}</div>
+      <button
+        type="button"
+        (click)="retry()"
+        class="px-2.5 py-1 rounded bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 transition-colors cursor-pointer text-xs"
+        data-testid="retry-chat-mfe-button"
+      >
+        Retry Connection
+      </button>
     </div>
   }
   <div #chatContainer class="chat-container" data-testid="chat-container"></div>

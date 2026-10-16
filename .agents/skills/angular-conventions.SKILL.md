@@ -16,7 +16,9 @@ Commands go through `bunx nx ...`. Use the workspace's installed Angular version
   - The Tailwind entry file is plain CSS (`src/tailwind.css`), containing `@import "tailwindcss";` and `@theme { ... }` tokens. Do **not** import Tailwind inside `.scss` files.
   - In `project.json`, include `src/tailwind.css` alongside `src/styles.scss` in the `esbuild` `styles` array.
   - Add `@source` entries in `tailwind.css` for any `libs/` projects whose templates use Tailwind classes.
-  - Convention: use utility classes in templates (full class names only, never built from string fragments). If `@apply` or theme variables are needed in component styles, import global tokens with `@reference`, or use `var(--color-...)` directly.
+  - Convention: use utility classes in templates (full class names only, never built from string fragments). If `@apply` or theme variables
+    are needed in component styles, import global tokens with `@reference`, or use `var(--color-...)` directly.
+  - Use a theme color file to store all the color values and style constants, and use them in the SCSS files. Avoid hardcoding color values in the SCSS or HTML.
 - Feature-oriented folders; smart (container) components fetch and coordinate, presentational components take inputs and emit outputs.
 - No business or data logic in components. Put it in services or pure functions that are easy to test.
 

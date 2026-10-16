@@ -10,7 +10,9 @@ Commands go through `bunx nx ...` / `bun`. Use the workspace's installed React v
 ## Architecture and Bundler
 
 - **Bundler**: Vite (`--bundler=vite`), providing fast HMR and seamless integration with Vitest.
-- **Styling**: Tailwind CSS + SCSS (`--style=scss`), sharing design tokens and styles consistently across microfrontends.
+- **Styling**:
+  - Tailwind CSS + SCSS (`--style=scss`), sharing design tokens and styles consistently across microfrontends.
+  - Use a theme color file to store all the color values and style constants, and use them in the SCSS files. Avoid hardcoding color values in the SCSS or HTML.
 - **Microfrontend Architecture**: Native Federation (`@angular-architects/native-federation` / `@softarc/native-federation-node`), using browser-native ESM and Import Maps.
 - **Coupling & Contracts**:
   - The remote is a **chat UI for the agent service**. Keep it small and focused.

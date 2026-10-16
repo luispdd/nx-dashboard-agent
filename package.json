@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "nx run-many -t serve --projects=dashboard-shell,dashboard-api,chat-mfe",
-    "serve": "nx run-many -t serve --projects=dashboard-shell,dashboard-api,chat-mfe",
+    "start": "nx run-many -t serve --projects=dashboard-shell,dashboard-api,chat-mfe,agent-service",
+    "serve": "nx run-many -t serve --projects=dashboard-shell,dashboard-api,chat-mfe,agent-service",
     "serve:all": "nx run-many -t serve",
     "serve:shell": "nx serve dashboard-shell",
     "serve:api": "nx serve dashboard-api",

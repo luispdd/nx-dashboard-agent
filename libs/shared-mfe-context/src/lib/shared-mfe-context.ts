@@ -36,6 +36,8 @@ export function createDefaultDashboardContext(): DashboardContext {
   };
 }
 
+export const createDefaultContainerContext = createDefaultDashboardContext;
+
 export function sharedMfeContext(): string {
   return 'shared-mfe-context';
 }

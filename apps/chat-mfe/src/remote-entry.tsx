@@ -1,12 +1,9 @@
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import App from './app/app';
-import type { DashboardContext } from 'shared-mfe-context';
+import type { DashboardContext, MountOptions } from 'shared-mfe-context';
 
-export interface MountOptions {
-  context?: DashboardContext;
-  onContextChange?: (context: DashboardContext) => void;
-}
+export type { DashboardContext, MountOptions };
 
 export function mount(
   container: HTMLElement,
@@ -15,7 +12,7 @@ export function mount(
   const root: Root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <App />
+      <App mountOptions={options} />
     </React.StrictMode>
   );
 

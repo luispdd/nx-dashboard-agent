@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  createDefaultContainerContext,
   createDefaultDashboardContext,
   sharedMfeContext,
   type DashboardContext,
@@ -17,6 +18,12 @@ describe('sharedMfeContext', () => {
     expect(defaultCtx.selectedDevices).toEqual(['esp32c6']);
     expect(defaultCtx.unit).toBe('°C');
     expect(defaultCtx.timeRange?.preset).toBe('1d');
+  });
+
+  it('should export createDefaultContainerContext matching createDefaultDashboardContext', () => {
+    const containerCtx = createDefaultContainerContext();
+    const dashboardCtx = createDefaultDashboardContext();
+    expect(containerCtx).toEqual(dashboardCtx);
   });
 
   it('should satisfy MountOptions shape and callback typing', () => {
