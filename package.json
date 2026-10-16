@@ -14,7 +14,7 @@
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
     "lint": "nx run-many -t lint",
-    "e2e": "nx run-many -t e2e",
+    "e2e": "playwright test -c e2e/playwright.config.ts",
     "affected": "nx affected -t lint test build",
     "etl": "nx run agent-service:etl",
     "export:openapi": "nx run dashboard-api:export-openapi",

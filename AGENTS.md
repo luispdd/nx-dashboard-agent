@@ -31,7 +31,7 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **Styling:** Tailwind CSS + SCSS across all microfrontends.
 - **Angular Architecture:** Angular 22, Zoneless (`provideExperimentalZonelessChangeDetection`), Signals-first (`signal`, `computed`, `input`, `output`), and independent files for component (`.ts`), template (`.html`), and styles (`.scss`) with no inline templates or styles.
 - **Unit Testing:** Vitest unified across all projects (NestJS, Angular with `vitest-angular`, React with Vitest).
-- **E2E Testing:** Playwright across all apps.
+- **E2E Testing:** A single unified Playwright suite at workspace level (`e2e/`) testing the fully deployed project with no backend mocks (no fragmented per-app e2e suites).
 - **Charts:** ApexCharts for time-series visualization.
 - **Board identity:** `device_id` is a string (e.g. `'esp32c6'`).
 
@@ -84,6 +84,11 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **Micro Frontend Origin Resolution in CORS**: When a remote MFE (e.g. `chat-mfe` on port 4204) mounts into a host shell (`dashboard-shell` on port 4200), browser `fetch` requests execute within the host's browsing context (`origin: http://localhost:4200`). Backend CORS configs (e.g. FastAPI `agent-service`) must permit both host and remote origins, including `localhost` and `127.0.0.1` variants.
 - **MFE DOM State Persistence Across UI Toggles**: Toggling microfrontend host drawers or modals with Angular `@if` destroys the wrapper DOM and unmounts the remote's React root (`root.unmount()`), wiping in-memory state (messages, active streams). Keep the wrapper mounted in the DOM and toggle visibility via CSS transforms (`translate-x-full` / `translate-x-0`), backdrop opacity, and `[attr.inert]="!isOpen() ? '' : null"`.
 - **Token Streaming vs. Smooth Scrolling Conflict**: Applying `scroll-smooth` or `scroll-behavior: smooth` to a chat message container during high-frequency token streams (~20 events/sec) causes animated scroll latency. Mid-flight scroll events falsely flag that the user has scrolled up (`distanceFromBottom > threshold`), permanently disengaging auto-scroll. Use instant scroll pinning (`el.scrollTop = el.scrollHeight`) without `scroll-smooth` during active streaming.
+- **Single Workspace E2E Suite vs. Parallel Per-App Playwright WebServers**: Multiple per-app E2E projects (`dashboard-shell-e2e`, `dashboard-api:e2e`) concurrently spawning dev servers via nested `bun nx run <service>:serve` in Playwright `webServer` blocks trigger Nx circular task detection (`Nx detected a recursive loop of tasks: ... -> dashboard-api:serve -> dashboard-api:build`) and hang the interactive TUI. Maintain strictly one top-level workspace E2E suite (`e2e/`) orchestrating the entire stack once and testing each tier sequentially.
+- **E2E Invariance to Dynamic Database State**: End-to-end tests against real SQLite data must never assert hardcoded record counts, static element numbers, or exact measurement values. If testing tables or charts, assert structural rendering and populated rows (`tbody tr`), and use point-count filters (e.g. "50 pts") rather than relative historical presets ("Last 1d") to remain resilient across data migrations.
+- **Streaming Chat Submit Button State Assertions**: When chat input forms clear text immediately on submission (`setText('')`), the send button remains disabled even after stream completion (`disabled={!text.trim() || isStreaming}`). Never assert `expect(sendBtn).toBeEnabled()`; verify stream completion by asserting `expect(stopBtn).not.toBeVisible()` and `expect(sendBtn).toBeVisible()`.
+- **Zoneless Angular `ngOnInit` Async Tracking in Vitest**: Angular executes component lifecycle hooks synchronously and does not await promises returned by `async ngOnInit()`. In zoneless testing (`provideExperimentalZonelessChangeDetection`), `await fixture.whenStable()` does not wait for untracked native microtasks or async dynamic module loaders. Expose and store the initialization promise (e.g. `protected mountPromise: Promise<void> | null`) and await it explicitly (`await fixture.componentInstance['mountPromise']`) before asserting post-initialization state or flushing component effects.
+- **Sequential Execution for E2E Tests with Local LLMs (`workers: 1`)**: Running Playwright E2E tests with parallel workers (`workers > 1`) against a local LLM server divides GPU/CPU compute and queues requests, inflating streaming latency (from ~7s to >60s) and triggering test assertion timeouts. Configure `workers: 1` in `e2e/playwright.config.ts` so end-to-end integration tests execute sequentially at full model inference throughput.
 
 ## Commands
 
@@ -92,7 +97,7 @@ bun install                                         # install JS dependencies
 nx affected -t lint test build                      # lint, test, build what changed
 nx serve <project>                                  # run a project (dashboard-shell, chat-mfe, dashboard-api, agent-service)
 nx run-many -t serve --outputStyle=stream           # run all dev servers simultaneously with real-time logs
-nx e2e <project>-e2e                                # run Playwright E2E tests
+bun run e2e                                         # run unified workspace Playwright E2E tests against live stack
 nx run agent-service:seed                           # generate synthetic source SQLite DB
 nx run agent-service:etl                            # run ETL pipeline to build derived DB
 nx run agent-service:eval                           # run agent evaluation benchmark against active LLM

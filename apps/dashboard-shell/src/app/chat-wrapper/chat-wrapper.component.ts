@@ -32,6 +32,7 @@ export class ChatWrapperComponent implements OnInit {
 
   private unmountFn: (() => void) | null = null;
   private contextListener: DashboardContextListener | null = null;
+  protected mountPromise: Promise<void> | null = null;
 
   constructor() {
     effect(() => {
@@ -40,10 +41,6 @@ export class ChatWrapperComponent implements OnInit {
         this.contextListener(activeCtx);
       }
     });
-  }
-
-  async ngOnInit(): Promise<void> {
-    await this.mountRemote();
 
     this.destroyRef.onDestroy(() => {
       this.contextListener = null;
@@ -53,10 +50,31 @@ export class ChatWrapperComponent implements OnInit {
     });
   }
 
+  async ngOnInit(): Promise<void> {
+    this.mountPromise = this.mountRemote();
+    await this.mountPromise;
+  }
+
   async retry(): Promise<void> {
+    this.cleanupMount();
     this.status.set('loading');
     this.errorMessage.set(null);
     await this.mountRemote();
+  }
+
+  private cleanupMount(): void {
+    if (this.unmountFn) {
+      try {
+        this.unmountFn();
+      } catch {
+        // ignore
+      }
+      this.unmountFn = null;
+    }
+    const containerEl = this.container()?.nativeElement;
+    if (containerEl) {
+      containerEl.innerHTML = '';
+    }
   }
 
   private async mountRemote(): Promise<void> {
@@ -65,13 +83,18 @@ export class ChatWrapperComponent implements OnInit {
       if (!containerEl) {
         return;
       }
+      this.cleanupMount();
 
       const remoteModule = await loadRemoteModule<{
         mount: (
           el: HTMLElement,
           options?: MountOptions
         ) => () => void;
-      }>('chat-mfe', './Chat');
+      }>({
+        remoteEntry: 'http://localhost:4204/remoteEntry.json',
+        remoteName: 'chat-mfe',
+        exposedModule: './Chat',
+      });
 
       if (remoteModule && typeof remoteModule.mount === 'function') {
         const initialContext = this.contextService.activeContext();

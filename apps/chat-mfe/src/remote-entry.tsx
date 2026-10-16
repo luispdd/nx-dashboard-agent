@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import App from './app/app';
+import { ChatErrorBoundary } from './app/components/chat-error-boundary';
 import type { DashboardContext, MountOptions } from 'shared-mfe-context';
 
 export type { DashboardContext, MountOptions };
@@ -12,7 +13,9 @@ export function mount(
   const root: Root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <App mountOptions={options} />
+      <ChatErrorBoundary>
+        <App mountOptions={options} />
+      </ChatErrorBoundary>
     </React.StrictMode>
   );
 

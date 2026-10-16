@@ -184,7 +184,7 @@ export function useChatStream(options: UseChatStreamOptions = {}): UseChatStream
               }
 
               if (currentEvent === 'token') {
-                const tokenContent = parsedData.content || '';
+                const tokenContent = parsedData.content ?? parsedData.delta ?? '';
                 setMessages((prev) => {
                   const lastIndex = prev.findIndex((m) => m.id === assistantMessageId);
                   if (lastIndex === -1) return prev;
@@ -220,7 +220,7 @@ export function useChatStream(options: UseChatStreamOptions = {}): UseChatStream
                 });
               } else if (currentEvent === 'tool_result') {
                 const callId = parsedData.call_id;
-                const result = parsedData.result;
+                const result = parsedData.result !== undefined ? parsedData.result : parsedData.output;
 
                 setMessages((prev) => {
                   const lastIndex = prev.findIndex((m) => m.id === assistantMessageId);

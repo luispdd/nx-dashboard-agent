@@ -21,13 +21,29 @@
   ></button>
 
   <aside
-    class="fixed top-0 right-0 bottom-0 w-full sm:w-[480px] bg-card border-l border-theme z-50 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out"
+    class="fixed top-0 right-0 bottom-0 w-full bg-card border-l border-theme z-50 flex flex-col shadow-2xl max-w-full max-sm:!w-full"
+    [class.transition-transform]="!isResizing()"
+    [class.duration-300]="!isResizing()"
+    [class.ease-in-out]="!isResizing()"
     [class.translate-x-0]="isChatOpen()"
     [class.translate-x-full]="!isChatOpen()"
     [attr.aria-hidden]="!isChatOpen()"
     [attr.inert]="!isChatOpen() ? '' : null"
+    [style.--drawer-width.px]="drawerWidth()"
+    [style.width.px]="drawerWidth()"
     data-testid="chat-drawer"
   >
+    <!-- Draggable Resize Handle Border -->
+    <div
+      class="hidden sm:flex absolute top-0 bottom-0 -left-1.5 w-3 cursor-col-resize z-50 items-center justify-center group select-none hover:bg-accent/10"
+      (pointerdown)="startResize($event)"
+      data-testid="chat-drawer-resize-handle"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize Chat Drawer"
+    >
+      <div class="w-[2px] h-full group-hover:bg-accent/60 group-active:bg-accent transition-colors"></div>
+    </div>
     <div class="h-16 px-5 border-b border-theme flex items-center justify-between bg-rail/40">
       <div class="flex items-center gap-2.5">
         <span class="material-symbols-outlined text-accent text-[20px]">smart_toy</span>
