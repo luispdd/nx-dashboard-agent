@@ -93,7 +93,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, class
       elements.push(
         <div
           key={`code-${elements.length}`}
-          className="my-2.5 rounded-lg border border-white/10 bg-[#07090E] overflow-hidden"
+          className="my-2.5 rounded-lg border border-white/10 bg-surface-deep overflow-hidden"
         >
           {lang && (
             <div className="px-3 py-1 bg-white/5 border-b border-white/10 text-[10px] font-mono text-text-muted uppercase">

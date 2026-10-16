@@ -4,6 +4,7 @@ import {
   type DashboardContext,
   type MountOptions,
 } from 'shared-mfe-context';
+import '../styles.scss';
 import '../tailwind.css';
 import { useChatStream } from './hooks/use-chat-stream';
 import { ChatHeader } from './components/chat-header';
@@ -54,7 +55,7 @@ export function App({ mountOptions }: AppProps = {}) {
 
   return (
     <div
-      className="flex flex-col h-full w-full bg-[#0B0D12] text-text-primary overflow-hidden font-sans select-text min-h-0"
+      className="flex flex-col h-full w-full bg-bg-app text-text-primary overflow-hidden font-sans select-text min-h-0"
       data-testid="chat-app-root"
     >
       <ChatHeader

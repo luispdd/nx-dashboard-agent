@@ -36,7 +36,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   return (
     <div
-      className="px-4 py-2.5 border-b border-white/10 bg-[#131722]/80 backdrop-blur-md flex items-center justify-between gap-3 shrink-0"
+      className="px-4 py-2.5 border-b border-white/10 bg-card/80 backdrop-blur-md flex items-center justify-between gap-3 shrink-0"
       data-testid="chat-header"
     >
       {/* Active Context Pill Badge */}

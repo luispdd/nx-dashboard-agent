@@ -5,7 +5,7 @@ description: Use when creating or changing anything in the Angular shell (dashbo
 
 # Angular conventions (shell / host)
 
-Commands go through `bunx nx ...`. Use the workspace's installed Angular version and its current idioms; check the installed version before using newer APIs.
+Commands go through `nx ...`. Use the workspace's installed Angular version and its current idioms; check the installed version before using newer APIs.
 
 ## Structure
 
@@ -16,9 +16,11 @@ Commands go through `bunx nx ...`. Use the workspace's installed Angular version
   - The Tailwind entry file is plain CSS (`src/tailwind.css`), containing `@import "tailwindcss";` and `@theme { ... }` tokens. Do **not** import Tailwind inside `.scss` files.
   - In `project.json`, include `src/tailwind.css` alongside `src/styles.scss` in the `esbuild` `styles` array.
   - Add `@source` entries in `tailwind.css` for any `libs/` projects whose templates use Tailwind classes.
-  - Convention: use utility classes in templates (full class names only, never built from string fragments). If `@apply` or theme variables
-    are needed in component styles, import global tokens with `@reference`, or use `var(--color-...)` directly.
-  - Use a theme color file to store all the color values and style constants, and use them in the SCSS files. Avoid hardcoding color values in the SCSS or HTML.
+  - **No Hexadecimal Colors in HTML**: Never use hexadecimal color values directly in HTML templates.
+    - Absolutely no arbitrary Tailwind hex classes (e.g., `bg-[#...]`, `text-[#...]`, `border-[#...]`).
+    - Absolutely no inline styles containing hex colors (`style="color: #..."`).
+  - **Theme Storage**: All colors must be stored in the theme files (`@theme` in `src/tailwind.css` and `:root` in `src/styles.scss`).
+  - **Color Usage**: Apply colors in templates using semantic utility classes (e.g., `bg-card`, `bg-rail`, `text-accent`, full class names only, never built from string fragments) or generic classes. If custom styles or theme variables are needed in component SCSS, reference theme variables via `var(--...)` or `@reference`. Never hardcode raw hex values in SCSS or HTML.
 - Feature-oriented folders; smart (container) components fetch and coordinate, presentational components take inputs and emit outputs.
 - No business or data logic in components. Put it in services or pure functions that are easy to test.
 
@@ -62,7 +64,8 @@ Commands go through `bunx nx ...`. Use the workspace's installed Angular version
 ## Checklist
 
 - [ ] Standalone, OnPush, signals, new control flow
+- [ ] No hexadecimal color values in HTML templates; all colors stored in theme files and applied via semantic classes or SCSS variables
 - [ ] Generated client only; loading/empty/error states
 - [ ] Metric-driven, units from the catalogue, UTC in and local time only for display
 - [ ] No imports from the chat remote; context via shared contract
-- [ ] Tests and lint pass (`bunx nx affected -t lint test`)
+- [ ] Tests and lint pass (`nx affected -t lint test`)

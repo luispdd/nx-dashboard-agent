@@ -53,10 +53,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="pt-3 border-t border-white/10 bg-[#131722]/80 backdrop-blur-md shrink-0"
+      className="pt-3 border-t border-white/10 bg-card/80 backdrop-blur-md shrink-0"
       data-testid="chat-input-form"
     >
-      <div className="relative flex items-end gap-2 bg-[#0B0D12] border border-white/10 focus-within:border-accent/60 rounded-xl p-2 transition-all shadow-inner">
+      <div className="relative flex items-end gap-2 bg-bg-app border border-white/10 focus-within:border-accent/60 rounded-xl p-2 transition-all shadow-inner">
         <textarea
           ref={textareaRef}
           value={text}

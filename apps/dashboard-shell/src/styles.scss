@@ -3,6 +3,8 @@
   --bg-card: #131722;
   --bg-card-hover: #181E2C;
   --bg-rail: #171B28;
+  --surface-deep: #07090E;
+  --surface-nested: #090C13;
   --border: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(45, 212, 191, 0.5);
   --divider: rgba(255, 255, 255, 0.06);
@@ -11,6 +13,7 @@
   --text-muted: #6B7280;
   --accent: #2DD4BF;
   --accent-glow: rgba(45, 212, 191, 0.2);
+  --status-error: #ef4444;
 
   /* Metric Palettes */
   --metric-temperature: #2DD4BF;
@@ -29,6 +32,10 @@ html, body {
 }
 
 /* Base custom utility styling */
+.bg-app {
+  background-color: var(--bg-app);
+}
+
 .bg-card {
   background-color: var(--bg-card);
 }
@@ -39,6 +46,14 @@ html, body {
 
 .bg-rail {
   background-color: var(--bg-rail);
+}
+
+.bg-surface-deep {
+  background-color: var(--surface-deep);
+}
+
+.bg-surface-nested {
+  background-color: var(--surface-nested);
 }
 
 .border-theme {
@@ -76,7 +91,7 @@ html, body {
 }
 
 .apexcharts-tooltip.apexcharts-theme-dark {
-  background: #131722 !important;
+  background: var(--bg-card) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
   border-radius: 8px !important;
@@ -94,7 +109,7 @@ html, body {
 }
 
 .apexcharts-menu {
-  background: #171B28 !important;
+  background: var(--bg-rail) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 

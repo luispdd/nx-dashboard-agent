@@ -49,7 +49,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       </div>
 
       {/* Bubble Content */}
-      <div className="max-w-[88%] rounded-2xl rounded-tl-xs px-4 py-3 bg-[#131722] border border-white/10 text-text-primary shadow-md overflow-hidden select-text">
+      <div className="max-w-[88%] rounded-2xl rounded-tl-xs px-4 py-3 bg-card border border-white/10 text-text-primary shadow-md overflow-hidden select-text">
         {/* Tool Call Accordions */}
         {message.toolCalls && message.toolCalls.length > 0 && (
           <div className="mb-2.5 space-y-1.5" data-testid="tool-steps-container">

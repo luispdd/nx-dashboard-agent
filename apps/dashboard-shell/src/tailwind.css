@@ -10,6 +10,8 @@
   --color-card: #131722;
   --color-card-hover: #181E2C;
   --color-rail: #171B28;
+  --color-surface-deep: #07090E;
+  --color-surface-nested: #090C13;
   --color-theme: rgba(255, 255, 255, 0.08);
   --color-border-theme: rgba(255, 255, 255, 0.08);
   --color-border-focus: rgba(45, 212, 191, 0.5);

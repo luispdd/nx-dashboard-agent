@@ -1,1 +1,33 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --bg-app: #0B0D12;
+  --bg-card: #131722;
+  --bg-card-hover: #181E2C;
+  --bg-rail: #171B28;
+  --surface-deep: #07090E;
+  --surface-nested: #090C13;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(45, 212, 191, 0.5);
+  --divider: rgba(255, 255, 255, 0.06);
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --accent: #2DD4BF;
+  --accent-glow: rgba(45, 212, 191, 0.2);
+}
+
+/* Generic utility classes */
+.bg-app {
+  background-color: var(--bg-app);
+}
+
+.bg-card {
+  background-color: var(--bg-card);
+}
+
+.bg-surface-deep {
+  background-color: var(--surface-deep);
+}
+
+.bg-surface-nested {
+  background-color: var(--surface-nested);
+}

@@ -1,5 +1,9 @@
 # AGENTS.md
 
+# Core rules
+
+- Never rely on just your knowledge, specially when working with third-party libraries or APIs, do an in-depth research first, paying attention to use the specific version of the library/API that is used in this project.
+
 Guidance for coding agents working in this repository. Keep this file short; detailed rules live in skills under `.agents/skills/`.
 
 ## Project

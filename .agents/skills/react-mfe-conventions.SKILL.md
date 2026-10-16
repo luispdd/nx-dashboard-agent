@@ -5,14 +5,18 @@ description: Use when creating or changing the React chat micro frontend (remote
 
 # React MFE conventions (chat remote)
 
-Commands go through `bunx nx ...` / `bun`. Use the workspace's installed React version and idioms.
+Commands go through `nx ...` / `bun`. Use the workspace's installed React version and idioms.
 
 ## Architecture and Bundler
 
 - **Bundler**: Vite (`--bundler=vite`), providing fast HMR and seamless integration with Vitest.
 - **Styling**:
   - Tailwind CSS + SCSS (`--style=scss`), sharing design tokens and styles consistently across microfrontends.
-  - Use a theme color file to store all the color values and style constants, and use them in the SCSS files. Avoid hardcoding color values in the SCSS or HTML.
+  - **No Hexadecimal Colors in HTML/JSX**: Never use hexadecimal color values directly in HTML, TSX, or JSX templates.
+    - Absolutely no arbitrary Tailwind hex classes (e.g., `bg-[#...]`, `text-[#...]`, `border-[#...]`).
+    - Absolutely no inline styles containing hex colors (`style={{ color: '#...' }}`).
+  - **Theme Storage**: All colors must be stored in the theme files (`@theme` in `src/tailwind.css` and `:root` in `src/styles.scss`).
+  - **Color Usage**: Apply colors in templates using semantic theme classes (e.g. `bg-card`, `bg-bg-app`, `bg-surface-deep`, `bg-surface-nested`, `text-accent`) or generic classes from `styles.scss`. In SCSS files, always reference theme CSS variables (e.g., `var(--bg-card)`, `var(--text-muted)`), never raw hex values.
 - **Microfrontend Architecture**: Native Federation (`@angular-architects/native-federation` / `@softarc/native-federation-node`), using browser-native ESM and Import Maps.
 - **Coupling & Contracts**:
   - The remote is a **chat UI for the agent service**. Keep it small and focused.
@@ -57,7 +61,8 @@ Commands go through `bunx nx ...` / `bun`. Use the workspace's installed React v
 
 - [ ] No imports from the shell; context only via `libs/shared-mfe-context`
 - [ ] Bundled via Vite with Tailwind CSS + SCSS
+- [ ] No hexadecimal color values in HTML/JSX templates; all colors stored in theme files and applied via semantic classes or SCSS variables
 - [ ] Streaming hook handles all event types, errors and cancellation
 - [ ] Tool calls shown as steps; output rendered safely
 - [ ] Standalone dev run and runtime load in the shell both work
-- [ ] Lint and tests pass (`bunx nx affected -t lint test`)
+- [ ] Lint and tests pass (`nx affected -t lint test`)

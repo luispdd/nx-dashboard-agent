@@ -127,7 +127,7 @@ export const ToolStepAccordion: React.FC<ToolStepAccordionProps> = ({
 
       {isExpanded && (
         <div
-          className="px-3 pb-3 pt-1 border-t border-white/5 space-y-2 bg-[#090C13]"
+          className="px-3 pb-3 pt-1 border-t border-white/5 space-y-2 bg-surface-nested"
           data-testid="tool-step-details"
         >
           {step.args && Object.keys(step.args).length > 0 && (
