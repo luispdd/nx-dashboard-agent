@@ -16,6 +16,18 @@ class DashboardApiError(Exception):
         self.response_data = response_data
 
 
+def _format_http_error(err: httpx.HTTPError, action: str) -> str:
+    if hasattr(err, "response") and err.response is not None:
+        try:
+            data = err.response.json()
+            if isinstance(data, dict) and "message" in data:
+                return f"Dashboard API error {action} ({err.response.status_code}): {data['message']}"
+        except Exception:  # noqa: BLE001
+            if err.response.text:
+                return f"Dashboard API error {action} ({err.response.status_code}): {err.response.text}"
+    return f"Dashboard API error {action}: {err}"
+
+
 class DashboardApiClient:
     def __init__(
         self,
@@ -67,7 +79,7 @@ class DashboardApiClient:
         except httpx.HTTPError as err:
             logger.warning("Failed to fetch metrics: %s", err)
             status = err.response.status_code if hasattr(err, "response") and err.response else None
-            raise DashboardApiError(f"Dashboard API error fetching metrics: {err}", status_code=status) from err
+            raise DashboardApiError(_format_http_error(err, "fetching metrics"), status_code=status) from err
 
     async def get_devices(self) -> list[str]:
         """Retrieves list of active device identifiers from GET /api/devices."""
@@ -81,7 +93,7 @@ class DashboardApiClient:
         except httpx.HTTPError as err:
             logger.warning("Failed to fetch devices: %s", err)
             status = err.response.status_code if hasattr(err, "response") and err.response else None
-            raise DashboardApiError(f"Dashboard API error fetching devices: {err}", status_code=status) from err
+            raise DashboardApiError(_format_http_error(err, "fetching devices"), status_code=status) from err
 
     async def get_stats(
         self,
@@ -109,7 +121,7 @@ class DashboardApiClient:
         except httpx.HTTPError as err:
             logger.warning("Failed to fetch stats with params %s: %s", params, err)
             status = err.response.status_code if hasattr(err, "response") and err.response else None
-            raise DashboardApiError(f"Dashboard API error fetching stats: {err}", status_code=status) from err
+            raise DashboardApiError(_format_http_error(err, "fetching stats"), status_code=status) from err
 
     async def get_series(
         self,
@@ -141,4 +153,4 @@ class DashboardApiClient:
         except httpx.HTTPError as err:
             logger.warning("Failed to fetch series with params %s: %s", params, err)
             status = err.response.status_code if hasattr(err, "response") and err.response else None
-            raise DashboardApiError(f"Dashboard API error fetching series: {err}", status_code=status) from err
+            raise DashboardApiError(_format_http_error(err, "fetching series"), status_code=status) from err

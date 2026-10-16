@@ -3,6 +3,7 @@ import Database from 'better-sqlite3';
 import { Kysely, SqliteDialect, sql } from 'kysely';
 import { DatabaseSchema } from './database.schema';
 import {
+  DatabaseStatus,
   MeasurementsRepository,
   MetricCatalogItem,
   SeriesPointRow,
@@ -240,4 +241,45 @@ export class KyselyMeasurementsRepository
 
     return result;
   }
+
+  async getDatabaseStatus(): Promise<DatabaseStatus> {
+    try {
+      const rows = await this.db
+        .selectFrom('etl_metadata')
+        .select(['key', 'value'])
+        .execute();
+
+      const metadata = new Map(rows.map((r) => [r.key, r.value]));
+      const isDemo = metadata.get('is_demo') === 'true';
+      const readingCount = parseInt(metadata.get('reading_count') || '0', 10);
+      const deviceCount = parseInt(metadata.get('device_count') || '0', 10);
+      const lastImportedAt = metadata.get('imported_at') || null;
+
+      return {
+        isDemo,
+        readingCount,
+        deviceCount,
+        lastImportedAt,
+      };
+    } catch {
+      // Fallback if etl_metadata table does not exist
+      const deviceRows = await this.db
+        .selectFrom('measurements')
+        .select('device_id')
+        .distinct()
+        .execute();
+      const countRes = await this.db
+        .selectFrom('measurements')
+        .select(sql<number>`count(*)`.as('count'))
+        .executeTakeFirst();
+
+      return {
+        isDemo: true,
+        readingCount: Number(countRes?.count || 0),
+        deviceCount: deviceRows.length,
+        lastImportedAt: null,
+      };
+    }
+  }
 }
+

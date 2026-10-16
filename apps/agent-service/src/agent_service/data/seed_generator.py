@@ -36,11 +36,16 @@ class GeneratorConfig:
     start_time: datetime = field(
         default_factory=lambda: datetime(2026, 10, 5, 0, 0, 0, tzinfo=UTC)
     )
+    is_demo: bool = True
 
 
 def create_source_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(
         """
+        CREATE TABLE IF NOT EXISTS source_metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS nodes (
             device_id TEXT PRIMARY KEY,
             ip_address TEXT,
@@ -95,6 +100,10 @@ def generate_synthetic_database(
     conn = sqlite3.connect(str(target))
     try:
         create_source_schema(conn)
+        conn.execute(
+            "INSERT INTO source_metadata (key, value) VALUES (?, ?)",
+            ("is_demo", "true" if cfg.is_demo else "false"),
+        )
 
         # 1. Populate nodes & capabilities
         for dev_id in cfg.devices:

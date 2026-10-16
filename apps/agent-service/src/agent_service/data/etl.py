@@ -19,6 +19,8 @@ class ETLSummary:
     measurements_inserted: int
     catalog_entries: int
     devices_count: int
+    is_demo: bool = False
+    imported_at: str = ""
 
 
 def find_repo_root() -> Path:
@@ -111,6 +113,11 @@ def create_derived_schema(conn: sqlite3.Connection) -> None:
             unit TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS etl_metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS measurements (
             ts TEXT NOT NULL,
             device_id TEXT NOT NULL,
@@ -125,7 +132,11 @@ def create_derived_schema(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummary:
+def run_etl(
+    source_db_path: Path | str,
+    target_db_path: Path | str,
+    is_demo: bool | None = None,
+) -> ETLSummary:
     """Executes the ETL pipeline from source SQLite database to derived database.
 
     Safely reads source in read-only mode, stages the derived database in a temporary
@@ -146,6 +157,16 @@ def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummar
     # Open source in read-only mode
     source_uri = f"file:{source_p}?mode=ro"
     source_conn = sqlite3.connect(source_uri, uri=True)
+
+    # Determine if source is synthetic demo data
+    if is_demo is None:
+        try:
+            row = source_conn.execute(
+                "SELECT value FROM source_metadata WHERE key = 'is_demo'"
+            ).fetchone()
+            is_demo = bool(row and str(row[0]).strip().lower() in ("true", "1"))
+        except sqlite3.OperationalError:
+            is_demo = False
 
     dest_conn = sqlite3.connect(str(temp_target_p))
     try:
@@ -229,6 +250,20 @@ def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummar
             "SELECT count(*) FROM measurements"
         ).fetchone()[0]
 
+        now_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        metadata_records = [
+            ("is_demo", "true" if is_demo else "false"),
+            ("imported_at", now_iso),
+            ("reading_count", str(readings_count)),
+            ("measurement_count", str(measurements_count)),
+            ("device_count", str(len(devices_seen))),
+        ]
+        dest_conn.executemany(
+            "INSERT OR REPLACE INTO etl_metadata (key, value) VALUES (?, ?)",
+            metadata_records,
+        )
+        dest_conn.commit()
+
     finally:
         source_conn.close()
         dest_conn.close()
@@ -243,6 +278,8 @@ def run_etl(source_db_path: Path | str, target_db_path: Path | str) -> ETLSummar
         measurements_inserted=measurements_count,
         catalog_entries=len(catalog),
         devices_count=len(devices_seen),
+        is_demo=is_demo,
+        imported_at=now_iso,
     )
 
 
@@ -265,15 +302,30 @@ def main() -> None:
         default=str(default_dst),
         help=f"Path to derived output database (default: {default_dst})",
     )
+    parser.add_argument(
+        "--demo",
+        dest="is_demo",
+        action="store_true",
+        default=None,
+        help="Explicitly mark dataset as demo data",
+    )
+    parser.add_argument(
+        "--no-demo",
+        dest="is_demo",
+        action="store_false",
+        help="Explicitly mark dataset as non-demo / live data",
+    )
 
     args = parser.parse_args()
     print("Starting ETL migration...")
     print(f"  Source: {args.source}")
     print(f"  Target: {args.target}")
 
-    summary = run_etl(args.source, args.target)
+    summary = run_etl(args.source, args.target, is_demo=args.is_demo)
 
     print("ETL Migration Complete!")
+    print(f"  Is Demo:               {summary.is_demo}")
+    print(f"  Imported At:           {summary.imported_at}")
     print(f"  Readings processed:    {summary.readings_processed}")
     print(f"  Measurements inserted: {summary.measurements_inserted}")
     print(f"  Catalog entries:       {summary.catalog_entries}")

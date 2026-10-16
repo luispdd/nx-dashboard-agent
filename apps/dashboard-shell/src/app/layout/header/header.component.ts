@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { DatabaseStatusService } from '../../core/services/database-status.service';
 
 @Component({
   selector: 'app-header',
@@ -11,10 +12,15 @@ import { RouterModule } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeaderComponent {
+  private readonly databaseStatusService = inject(DatabaseStatusService);
+
   readonly isChatOpen = input<boolean>(false);
   readonly toggleChat = output<void>();
+
+  readonly isDemo = this.databaseStatusService.isDemo;
 
   onToggleChat(): void {
     this.toggleChat.emit();
   }
 }
+

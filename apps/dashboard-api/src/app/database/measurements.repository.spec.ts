@@ -192,4 +192,35 @@ describe('KyselyMeasurementsRepository', () => {
       });
     });
   });
+
+  describe('getDatabaseStatus', () => {
+    it('should return status from etl_metadata table when populated', async () => {
+      sqlite.exec(`
+        CREATE TABLE etl_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        INSERT INTO etl_metadata (key, value) VALUES
+          ('is_demo', 'true'),
+          ('reading_count', '1250'),
+          ('device_count', '3'),
+          ('imported_at', '2026-10-16T12:00:00Z');
+      `);
+
+      const status = await repo.getDatabaseStatus();
+      expect(status).toEqual({
+        isDemo: true,
+        readingCount: 1250,
+        deviceCount: 3,
+        lastImportedAt: '2026-10-16T12:00:00Z',
+      });
+    });
+
+    it('should fallback gracefully when etl_metadata table does not exist', async () => {
+      // sqlite memory DB in beforeEach has no etl_metadata table
+      const status = await repo.getDatabaseStatus();
+      expect(status.isDemo).toBe(true);
+      expect(status.readingCount).toBe(6);
+      expect(status.deviceCount).toBe(2);
+      expect(status.lastImportedAt).toBeNull();
+    });
+  });
 });
+

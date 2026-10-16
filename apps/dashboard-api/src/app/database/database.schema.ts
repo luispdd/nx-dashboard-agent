@@ -13,7 +13,14 @@ export interface MeasurementsTable {
   sampling: SamplingType;
 }
 
+export interface EtlMetadataTable {
+  key: string;
+  value: string;
+}
+
 export interface DatabaseSchema {
   metrics_catalog: MetricsCatalogTable;
   measurements: MeasurementsTable;
+  etl_metadata: EtlMetadataTable;
 }
+

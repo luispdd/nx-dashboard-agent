@@ -22,7 +22,7 @@
           type="text"
           formControlName="baseUrl"
           data-testid="base-url-input"
-          placeholder="http://localhost:8000/v1"
+          placeholder="http://127.0.0.1:8888/v1"
           class="mt-2 block w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2 font-mono text-sm text-slate-100 placeholder-slate-600 transition-colors focus:border-cyan-500 focus:outline-hidden focus:ring-1 focus:ring-cyan-500"
         />
         @if (settingsForm.controls.baseUrl.invalid && settingsForm.controls.baseUrl.touched) {
@@ -43,7 +43,7 @@
           type="text"
           formControlName="model"
           data-testid="model-input"
-          placeholder="qwen2.5-coder-7b"
+          placeholder="unsloth/Qwen3.5-4B-GGUF"
           class="mt-2 block w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3.5 py-2 font-mono text-sm text-slate-100 placeholder-slate-600 transition-colors focus:border-cyan-500 focus:outline-hidden focus:ring-1 focus:ring-cyan-500"
         />
         @if (settingsForm.controls.model.invalid && settingsForm.controls.model.touched) {

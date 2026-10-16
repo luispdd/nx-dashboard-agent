@@ -50,16 +50,24 @@ export class DistributionViewComponent implements OnInit {
   constructor() {
     effect(() => {
       const metrics = this.capabilitiesService.metrics();
-      if (metrics.length > 0 && !this.selectedMetric()) {
-        this.selectedMetric.set(metrics[0].metric_key);
-        this.fetchStats();
+      if (metrics.length > 0) {
+        const current = this.selectedMetric();
+        const isValid = metrics.some((m) => m.metric_key === current);
+        if (!current || !isValid) {
+          this.selectedMetric.set(metrics[0].metric_key);
+          this.fetchStats();
+        }
       }
     });
   }
 
   ngOnInit(): void {
-    if (this.selectedMetric()) {
-      this.fetchStats();
+    const metrics = this.capabilitiesService.metrics();
+    if (metrics.length > 0 && this.selectedMetric()) {
+      const isValid = metrics.some((m) => m.metric_key === this.selectedMetric());
+      if (isValid) {
+        this.fetchStats();
+      }
     }
   }
 
@@ -84,7 +92,22 @@ export class DistributionViewComponent implements OnInit {
       );
       this.rawStats.set(res?.stats ?? []);
     } catch (err: unknown) {
-      this.error.set(err instanceof Error ? err.message : String(err));
+      let msg = 'Failed to load telemetry statistics';
+      if (err && typeof err === 'object') {
+        const httpErr = err as { error?: { message?: string } | string; message?: string };
+        if (typeof httpErr.error === 'string') {
+          msg = httpErr.error;
+        } else if (httpErr.error?.message) {
+          msg = httpErr.error.message;
+        } else if (httpErr.message) {
+          msg = httpErr.message;
+        } else {
+          msg = JSON.stringify(err);
+        }
+      } else if (err) {
+        msg = String(err);
+      }
+      this.error.set(msg);
       this.rawStats.set([]);
     } finally {
       this.isLoading.set(false);

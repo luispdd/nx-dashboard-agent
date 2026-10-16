@@ -39,9 +39,18 @@ export interface StatsQueryOptions {
   includeOnDemand?: boolean;
 }
 
+export interface DatabaseStatus {
+  isDemo: boolean;
+  readingCount: number;
+  deviceCount: number;
+  lastImportedAt: string | null;
+}
+
 export interface MeasurementsRepository {
   getMetrics(): Promise<MetricCatalogItem[]>;
   getDevices(): Promise<string[]>;
   getSeries(options: SeriesQueryOptions): Promise<SeriesPointRow[]>;
   getStats(options: StatsQueryOptions): Promise<StatsRow[]>;
+  getDatabaseStatus(): Promise<DatabaseStatus>;
 }
+

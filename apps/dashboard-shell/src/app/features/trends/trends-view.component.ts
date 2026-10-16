@@ -53,18 +53,26 @@ export class TrendsViewComponent implements OnInit {
 
     effect(() => {
       const metrics = this.capabilitiesService.metrics();
-      if (metrics.length > 0 && !this.selectedMetric()) {
-        this.selectedMetric.set(metrics[0].metric_key);
-        this.syncContext();
-        this.fetchSeries();
+      if (metrics.length > 0) {
+        const current = this.selectedMetric();
+        const isValid = metrics.some((m) => m.metric_key === current);
+        if (!current || !isValid) {
+          this.selectedMetric.set(metrics[0].metric_key);
+          this.syncContext();
+          this.fetchSeries();
+        }
       }
     });
   }
 
   ngOnInit(): void {
-    if (this.selectedMetric()) {
-      this.syncContext();
-      this.fetchSeries();
+    const metrics = this.capabilitiesService.metrics();
+    if (metrics.length > 0 && this.selectedMetric()) {
+      const isValid = metrics.some((m) => m.metric_key === this.selectedMetric());
+      if (isValid) {
+        this.syncContext();
+        this.fetchSeries();
+      }
     }
   }
 
@@ -120,7 +128,22 @@ export class TrendsViewComponent implements OnInit {
       this.currentBucket.set(res?.bucket ?? bucket);
       this.syncContext();
     } catch (err: unknown) {
-      this.seriesError.set(err instanceof Error ? err.message : String(err));
+      let msg = 'Failed to load telemetry series';
+      if (err && typeof err === 'object') {
+        const httpErr = err as { error?: { message?: string } | string; message?: string };
+        if (typeof httpErr.error === 'string') {
+          msg = httpErr.error;
+        } else if (httpErr.error?.message) {
+          msg = httpErr.error.message;
+        } else if (httpErr.message) {
+          msg = httpErr.message;
+        } else {
+          msg = JSON.stringify(err);
+        }
+      } else if (err) {
+        msg = String(err);
+      }
+      this.seriesError.set(msg);
       this.seriesData.set([]);
     } finally {
       this.isSeriesLoading.set(false);

@@ -43,7 +43,7 @@ def find_runtime_config_path(custom_path: Path | str | None = None) -> Path | No
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env", str(find_repo_root() / "apps" / "agent-service" / ".env")),
+        env_file=(str(find_repo_root() / ".env"), ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )

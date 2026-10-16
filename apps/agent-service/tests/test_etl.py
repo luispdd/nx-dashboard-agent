@@ -139,3 +139,77 @@ def test_run_etl_rejects_undeclared_metrics(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="contains undeclared metric 'light_level'"):
         run_etl(source_db, derived_db)
+
+
+def test_etl_creates_metadata_and_tracks_demo(tmp_path: Path) -> None:
+    source_db = tmp_path / "source.db"
+    derived_db = tmp_path / "derived.db"
+
+    cfg = GeneratorConfig(duration_days=1, interval_minutes=60, is_demo=True)
+    seed_counts = generate_synthetic_database(source_db, config=cfg)
+
+    summary = run_etl(source_db, derived_db)
+    assert summary.is_demo is True
+    assert summary.imported_at.endswith("Z")
+
+    conn = sqlite3.connect(str(derived_db))
+    metadata = dict(conn.execute("SELECT key, value FROM etl_metadata").fetchall())
+    conn.close()
+
+    assert metadata["is_demo"] == "true"
+    assert metadata["reading_count"] == str(seed_counts["readings"])
+    assert int(metadata["device_count"]) == 3
+    assert metadata["imported_at"].endswith("Z")
+
+
+def test_etl_identifies_non_demo_source(tmp_path: Path) -> None:
+    source_db = tmp_path / "authentic_source.db"
+    derived_db = tmp_path / "derived_live.db"
+
+    # Create authentic source without source_metadata table
+    conn = sqlite3.connect(str(source_db))
+    conn.executescript(
+        """
+        CREATE TABLE nodes (device_id TEXT PRIMARY KEY, ip_address TEXT, capabilities TEXT, last_seen TEXT);
+        CREATE TABLE sensor_capabilities (device_id TEXT, metric_key TEXT, unit TEXT, PRIMARY KEY (device_id, metric_key));
+        CREATE TABLE readings (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL, device_id TEXT NOT NULL, metrics TEXT NOT NULL, ingested_at TEXT NOT NULL, is_fine_tuned INTEGER DEFAULT 0, UNIQUE(timestamp, device_id));
+        """
+    )
+    conn.execute(
+        "INSERT INTO sensor_capabilities (device_id, metric_key, unit) VALUES ('nodeA', 'temp', '°C')"
+    )
+    conn.execute(
+        "INSERT INTO readings (timestamp, device_id, metrics, ingested_at, is_fine_tuned) VALUES ('2026-10-05T08:00:00', 'nodeA', '{\"temp\": 21.5}', '2026-10-05T08:00:01', 0)"
+    )
+    conn.commit()
+    conn.close()
+
+    summary = run_etl(source_db, derived_db)
+    assert summary.is_demo is False
+
+    conn = sqlite3.connect(str(derived_db))
+    metadata = dict(conn.execute("SELECT key, value FROM etl_metadata").fetchall())
+    conn.close()
+
+    assert metadata["is_demo"] == "false"
+    assert metadata["reading_count"] == "1"
+    assert metadata["device_count"] == "1"
+
+
+def test_etl_explicit_demo_override(tmp_path: Path) -> None:
+    source_db = tmp_path / "source.db"
+    derived_db = tmp_path / "derived.db"
+
+    cfg = GeneratorConfig(duration_days=1, interval_minutes=60, is_demo=True)
+    generate_synthetic_database(source_db, config=cfg)
+
+    # Force is_demo=False via parameter
+    summary = run_etl(source_db, derived_db, is_demo=False)
+    assert summary.is_demo is False
+
+    conn = sqlite3.connect(str(derived_db))
+    metadata = dict(conn.execute("SELECT key, value FROM etl_metadata").fetchall())
+    conn.close()
+
+    assert metadata["is_demo"] == "false"
+

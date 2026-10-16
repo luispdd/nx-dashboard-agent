@@ -19,8 +19,8 @@ export interface LlmSettingsConfig {
 }
 
 export const DEFAULT_LLM_SETTINGS: LlmSettingsConfig = {
-  baseUrl: 'http://localhost:8000/v1',
-  model: 'qwen2.5-coder-7b',
+  baseUrl: 'http://127.0.0.1:8888/v1',
+  model: 'unsloth/Qwen3.5-4B-GGUF',
   apiKey: '',
 };
 

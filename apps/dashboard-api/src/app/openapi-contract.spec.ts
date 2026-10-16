@@ -65,6 +65,7 @@ describe('OpenAPI Contract Verification', () => {
     expect(paths).toContain('/api/devices');
     expect(paths).toContain('/api/series');
     expect(paths).toContain('/api/stats');
+    expect(paths).toContain('/api/database/status');
   });
 
   it('should verify /api/metrics response matches contract', async () => {
@@ -169,4 +170,21 @@ describe('OpenAPI Contract Verification', () => {
     expect(body.code).toBe('BAD_REQUEST');
     expect(typeof body.message).toBe('string');
   });
+
+  it('should verify /api/database/status response matches contract', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/database/status',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(typeof body.isDemo).toBe('boolean');
+    expect(typeof body.readingCount).toBe('number');
+    expect(typeof body.deviceCount).toBe('number');
+    expect(
+      body.lastImportedAt === null || typeof body.lastImportedAt === 'string'
+    ).toBe(true);
+  });
 });
+

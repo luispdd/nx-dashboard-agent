@@ -8,7 +8,7 @@ Guidance for coding agents working in this repository. Keep this file short; det
 
 ## Project
 
-IoT dashboard + data agent: a proof of concept used as an interview showcase and as a learning project.
+IoT dashboard + data agent: a proof of concept demonstrating full-stack IoT telemetry and local LLM agent orchestration.
 
 - **Dashboard:** Angular 22 shell (host, zoneless, signals-first, SCSS + Tailwind, ApexCharts) showing environmental measurements from IoT nodes.
 - **Chat:** React micro frontend (remote, Vite, SCSS + Tailwind, loaded via Native Federation) that talks to an LLM agent about the dashboard data and detects nodes reporting strange data.
@@ -34,6 +34,9 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **E2E Testing:** A single unified Playwright suite at workspace level (`e2e/`) testing the fully deployed project with no backend mocks (no fragmented per-app e2e suites).
 - **Charts:** ApexCharts for time-series visualization.
 - **Board identity:** `device_id` is a string (e.g. `'esp32c6'`).
+- **Containerization & Deployment:** All services (web host Nginx, NestJS API, FastAPI Agent Service) run in Docker. The optional local LLM runs on the host and is reached via `extra_hosts: ["host.docker.internal:host-gateway"]`.
+- **Environment Configuration:** A single centralized `.env` at workspace root drives configuration across Docker Compose and local commands (tracked via `.env.example`).
+- **Data Ingestion & Demo Data:** A missing database triggers automatic demo data generation on startup (`is_demo` metadata), indicated visibly in the dashboard toolbar. Real database ingestion is initiated on demand from the Dashboard Settings view with an input file selector.
 
 ## Tool Selection & Tooling
 
