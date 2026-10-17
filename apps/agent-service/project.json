@@ -30,13 +30,6 @@
         "cwd": "apps/agent-service"
       }
     },
-    "seed": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "uv run seed",
-        "cwd": "apps/agent-service"
-      }
-    },
     "eval": {
       "executor": "nx:run-commands",
       "options": {

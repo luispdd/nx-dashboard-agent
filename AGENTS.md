@@ -104,7 +104,7 @@ nx affected -t lint test build                      # lint, test, build what cha
 nx serve <project>                                  # run a project (dashboard-shell, chat-mfe, dashboard-api, agent-service)
 nx run-many -t serve --outputStyle=stream           # run all dev servers simultaneously with real-time logs
 bun run e2e                                         # run unified workspace Playwright E2E tests against live stack
-nx run agent-service:seed                           # generate synthetic source SQLite DB
+nx run dashboard-api:seed                            # generate synthetic source SQLite DB
 nx run dashboard-api:etl                            # run in-process ETL pipeline to build derived DB
 nx run agent-service:eval                           # run agent evaluation benchmark against active LLM
 nx run dashboard-api:export-openapi                 # export OpenAPI spec to dist/apps/dashboard-api/openapi.json

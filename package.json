@@ -29,7 +29,7 @@
     "check": "nx run-many -t lint test build",
     "affected": "nx affected -t lint test build",
     "e2e": "playwright test -c e2e/playwright.config.ts",
-    "seed": "nx run agent-service:seed",
+    "seed": "nx run dashboard-api:seed",
     "etl": "nx run dashboard-api:etl",
     "eval": "nx run agent-service:eval",
     "export:openapi": "nx run dashboard-api:export-openapi",

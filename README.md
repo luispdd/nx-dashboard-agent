@@ -100,10 +100,10 @@ cd apps/agent-service && uv sync && cd ../..
 The dashboard visualizes environmental measurements from physical IoT devices (ESP32-C6, Raspberry Pi Pico W). The raw database lives in `data/migrations/source.db`. Run the ETL pipeline to build the derived analytical database:
 
 ```bash
-nx run agent-service:etl
+nx run dashboard-api:etl
 ```
 
-> **Note:** Do not run `nx run agent-service:seed` unless you explicitly want to overwrite real telemetry with synthetic demo fixtures.
+> **Note:** Do not run `nx run dashboard-api:seed` unless you explicitly want to overwrite real telemetry with synthetic demo fixtures.
 
 ### 3. Generate API Contracts
 

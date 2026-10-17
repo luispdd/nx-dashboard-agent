@@ -136,84 +136,58 @@ def test_detect_all_anomalies_aggregation() -> None:
     assert any(f.type == "peer_deviation" for f in findings)
 
 
-def test_detect_injected_synthetic_anomalies(tmp_path) -> None:
-    import json
-    import sqlite3
+def test_detect_injected_synthetic_anomalies() -> None:
+    base_time = datetime(2026, 10, 5, 0, 0, 0, tzinfo=UTC)
+    devices = ["esp32c6", "esp32s3", "esp32node1"]
+    temp_series: dict[str, list[TelemetryPoint]] = {d: [] for d in devices}
+    hum_series: dict[str, list[TelemetryPoint]] = {d: [] for d in devices}
 
-    from agent_service.data.generate_seed import (
-        AnomalySpec,
-        GeneratorConfig,
-        generate_synthetic_database,
-    )
+    # 6 days with 5-minute interval = 1728 steps
+    total_steps = (6 * 24 * 60) // 5
+    flatline_temp = 22.5
 
-    db_path = tmp_path / "test_source.db"
-    anomalies = [
-        AnomalySpec(
-            anomaly_type="peer_deviation",
-            device_id="esp32c6",
-            metric_key="temperature",
-            start_offset_minutes=1440,
-            duration_minutes=360,
-            magnitude=8.5,
-        ),
-        AnomalySpec(
-            anomaly_type="spike",
-            device_id="esp32s3",
-            metric_key="humidity",
-            start_offset_minutes=2880,
-            duration_minutes=5,
-            magnitude=40.0,
-        ),
-        AnomalySpec(
-            anomaly_type="flatline",
-            device_id="esp32node1",
-            metric_key="temperature",
-            start_offset_minutes=4320,
-            duration_minutes=720,
-        ),
-        AnomalySpec(
-            anomaly_type="gap",
-            device_id="esp32c6",
-            metric_key="temperature",
-            start_offset_minutes=5760,
-            duration_minutes=180,
-        ),
-    ]
-    cfg = GeneratorConfig(duration_days=6, interval_minutes=5, anomalies=anomalies)
-    generate_synthetic_database(db_path, config=cfg, seed=42)
+    for step in range(total_steps):
+        mins = step * 5
+        current_time = base_time + timedelta(minutes=mins)
+        ts_iso = current_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    conn = sqlite3.connect(db_path)
-    try:
-        # Load temperature series by device
-        cur = conn.cursor()
-        cur.execute("SELECT timestamp, device_id, metrics FROM readings WHERE is_fine_tuned = 0 ORDER BY timestamp ASC")
-        rows = cur.fetchall()
+        for dev in devices:
+            # Gap on esp32c6: 5760 to 5940 mins
+            if dev == "esp32c6" and 5760 <= mins < 5940:
+                continue
 
-        temp_series: dict[str, list[TelemetryPoint]] = {"esp32c6": [], "esp32s3": [], "esp32node1": []}
-        hum_series: dict[str, list[TelemetryPoint]] = {"esp32c6": [], "esp32s3": [], "esp32node1": []}
+            # Base values
+            t_val = 20.0 + (step % 12) * 0.1
+            h_val = 50.0 + (step % 10) * 0.2
 
-        for ts_raw, dev, metrics_raw in rows:
-            m = json.loads(metrics_raw)
-            ts_iso = f"{ts_raw}Z"
-            if dev in temp_series and "temperature" in m:
-                temp_series[dev].append(TelemetryPoint(ts=ts_iso, value=m["temperature"]))
-            if dev in hum_series and "humidity" in m:
-                hum_series[dev].append(TelemetryPoint(ts=ts_iso, value=m["humidity"]))
+            # Peer deviation on esp32c6: 1440 to 1800 mins (+8.5)
+            if dev == "esp32c6" and 1440 <= mins < 1800:
+                t_val += 8.5
 
-        # 1. Peer deviation test
-        peer_anoms = detect_peer_deviation(temp_series, metric_key="temperature", threshold=3.0)
-        assert any(a.device_id == "esp32c6" and a.type == "peer_deviation" for a in peer_anoms)
+            # Spike on esp32s3 at exactly 2880 mins
+            if dev == "esp32s3" and mins == 2880:
+                h_val += 40.0
 
-        # 2. Spike test
-        spike_anoms = detect_spikes(hum_series, metric_key="humidity", z_threshold=3.5)
-        assert any(a.device_id == "esp32s3" and a.type == "spike" for a in spike_anoms)
+            # Flatline on esp32node1: 4320 to 5040 mins
+            if dev == "esp32node1" and 4320 <= mins < 5040:
+                t_val = flatline_temp
 
-        # 3. Flatline test
-        flatline_anoms = detect_flatlines(temp_series, metric_key="temperature", min_points=12)
-        assert any(a.device_id == "esp32node1" and a.type == "flatline" for a in flatline_anoms)
+            temp_series[dev].append(TelemetryPoint(ts=ts_iso, value=round(t_val, 2)))
+            hum_series[dev].append(TelemetryPoint(ts=ts_iso, value=round(h_val, 2)))
 
-        # 4. Gap test
-        gap_anoms = detect_gaps(temp_series, metric_key="temperature", max_allowed_gap_seconds=900)
-        assert any(a.device_id == "esp32c6" and a.type == "gap" for a in gap_anoms)
-    finally:
-        conn.close()
+    # 1. Peer deviation test
+    peer_anoms = detect_peer_deviation(temp_series, metric_key="temperature", threshold=3.0)
+    assert any(a.device_id == "esp32c6" and a.type == "peer_deviation" for a in peer_anoms)
+
+    # 2. Spike test
+    spike_anoms = detect_spikes(hum_series, metric_key="humidity", z_threshold=3.5)
+    assert any(a.device_id == "esp32s3" and a.type == "spike" for a in spike_anoms)
+
+    # 3. Flatline test
+    flatline_anoms = detect_flatlines(temp_series, metric_key="temperature", min_points=12)
+    assert any(a.device_id == "esp32node1" and a.type == "flatline" for a in flatline_anoms)
+
+    # 4. Gap test
+    gap_anoms = detect_gaps(temp_series, metric_key="temperature", max_allowed_gap_seconds=900)
+    assert any(a.device_id == "esp32c6" and a.type == "gap" for a in gap_anoms)
+

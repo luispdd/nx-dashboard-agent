@@ -62,6 +62,11 @@
         }
       }
     },
+    "test": {
+      "dependsOn": [
+        "export-openapi"
+      ]
+    },
     "export-openapi": {
       "dependsOn": [
         "build"
@@ -78,6 +83,12 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "node apps/dashboard-api/src/etl-runner.cjs"
+      }
+    },
+    "seed": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/dashboard-api/src/seed-runner.cjs"
       }
     }
   }
