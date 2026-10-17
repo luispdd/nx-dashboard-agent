@@ -95,6 +95,9 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **`better-sqlite3` Native Addon & Bun Crash**: Running scripts that load `better-sqlite3` directly via `bun run` or `bun` triggers a fatal N-API panic (`Error::New napi_get_last_error_info`). For standalone CLI runners touching `better-sqlite3` (e.g. `apps/dashboard-api/src/etl-cli.ts`), run with Node.js and `jiti` (`node apps/dashboard-api/src/etl-runner.cjs`), not bare `bun`.
 - **Linux Inode Detachment on Atomic File Swaps (`reconnect()`)**: On Linux, replacing an SQLite file atomically via `fs.renameSync` associates the path with a new inode. Existing open file descriptors continue querying the unlinked old inode. Persistence repositories (e.g. `KyselyMeasurementsRepository`) must close and recreate their database instance (`reconnect()`) immediately following an ETL atomic swap.
 - **Angular Template Linter A11y on Dropzones**: Adding `(click)` handlers to custom upload dropzone container elements (`<div>`) triggers `@angular-eslint/template` errors (`click-events-have-key-events` and `interactive-supports-focus`). Ensure the dropzone element defines `tabindex="0"`, `role="button"`, and keyboard listeners (`(keydown.enter)` / `(keydown.space)`).
+- **Docker Host Loopback on Linux (`network_mode: host`)**: Local LLM inference engines (such as Unsloth Studio) running on the Linux host bind strictly to `127.0.0.1`. When `agent-service` runs in a standard Docker bridge network, `host.docker.internal` maps to the bridge gateway (`172.17.0.1`), which cannot route packets to the host's loopback interface and fails with `[Errno 111] Connection refused`. Configure `network_mode: host` on `agent-service` in `docker-compose.yml` (with `http://127.0.0.1:8888/v1` for LLM and `http://localhost:3000` for `dashboard-api`) to allow direct loopback access without modifying the host LLM runner.
+- **Centralized Root `.env` Configuration**: Docker Compose reads environment variables from `.env` in the workspace root. Ensure `.env` is created from `.env.example` and populated with secrets like `LLM_API_KEY`. It is excluded by `.gitignore` (`*.env`) so secrets are never committed.
+- **Vite `envDir` in Monorepo Sub-Apps**: In sub-applications bundled with Vite (`apps/chat-mfe`), Vite resolves `.env` files relative to its `root` (`apps/chat-mfe`). When environment configuration is centralized at workspace root, configure `envDir: '../../'` in `vite.config.mts` so Vite exposes root `VITE_*` variables to the client build without requiring redundant per-app `.env` files.
 
 ## Commands
 
@@ -104,6 +107,9 @@ nx affected -t lint test build                      # lint, test, build what cha
 nx serve <project>                                  # run a project (dashboard-shell, chat-mfe, dashboard-api, agent-service)
 nx run-many -t serve --outputStyle=stream           # run all dev servers simultaneously with real-time logs
 bun run e2e                                         # run unified workspace Playwright E2E tests against live stack
+bun run docker:build                                # build production Docker images for all services
+bun run docker:up                                   # launch full containerized stack via Docker Compose
+bun run docker:down                                 # stop containerized stack
 nx run dashboard-api:seed                            # generate synthetic source SQLite DB
 nx run dashboard-api:etl                            # run in-process ETL pipeline to build derived DB
 nx run agent-service:eval                           # run agent evaluation benchmark against active LLM

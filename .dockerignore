@@ -1,0 +1,47 @@
+# Dependency caches
+node_modules/
+**/node_modules/
+.npm/
+.bun/
+.venv/
+**/.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Build outputs
+dist/
+**/dist/
+build/
+coverage/
+.nx/
+**/.nx/
+.vite/
+**/.vite/
+.angular/
+**/.angular/
+
+# Git and IDE
+.git/
+.gitignore
+.agents/
+.gemini/
+.vscode/
+.idea/
+
+# SQLite databases & runtime configs (mounted via volumes)
+data/migrations/*.db
+data/migrations/*.sqlite
+data/migrations/*.db-shm
+data/migrations/*.db-wal
+data/derived/*.db
+data/derived/*.sqlite
+data/derived/*.db-shm
+data/derived/*.db-wal
+data/runtime-config.json
+
+# Test outputs, logs & OS files
+playwright-report/
+test-results/
+*.log
+.DS_Store

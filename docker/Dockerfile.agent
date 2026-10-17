@@ -1,0 +1,27 @@
+# ==============================================================================
+# Agent Service — Multi-stage Dockerfile (Python 3.13 + Astral uv)
+# ==============================================================================
+
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS runner
+WORKDIR /app
+
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV PYTHONUNBUFFERED=1
+ENV RUNNING_IN_DOCKER=true
+
+# Cache dependencies layer
+COPY apps/agent-service/pyproject.toml apps/agent-service/uv.lock /app/apps/agent-service/
+WORKDIR /app/apps/agent-service
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Copy application source code and install project package
+COPY apps/agent-service /app/apps/agent-service
+RUN uv sync --frozen --no-dev
+
+# Ensure data directories exist for shared volume mounts
+RUN mkdir -p /app/data/migrations /app/data/derived
+
+EXPOSE 8000
+
+CMD ["uv", "run", "uvicorn", "agent_service.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -21,6 +21,12 @@ describe('AppController', () => {
       deviceCount: 2,
       lastImportedAt: '2026-10-17T11:00:00Z',
     }),
+    resetDemoDatabase: vi.fn().mockResolvedValue({
+      isDemo: true,
+      readingCount: 6238,
+      deviceCount: 3,
+      lastImportedAt: '2026-10-17T12:00:00Z',
+    }),
   };
 
   beforeAll(async () => {
@@ -85,6 +91,17 @@ describe('AppController', () => {
       );
       expect(result.isDemo).toBe(false);
       expect(result.readingCount).toBe(500);
+    });
+  });
+
+  describe('resetDemoDatabase', () => {
+    it('should delegate to appService.resetDemoDatabase and return status', async () => {
+      const appController = app.get<AppController>(AppController);
+      const result = await appController.resetDemoDatabase();
+      expect(mockAppService.resetDemoDatabase).toHaveBeenCalled();
+      expect(result.isDemo).toBe(true);
+      expect(result.readingCount).toBe(6238);
+      expect(result.deviceCount).toBe(3);
     });
   });
 });

@@ -32,23 +32,31 @@ export const METRIC_KEY_NORMALIZATIONS: Record<string, string> = {
 
 export function findRepoRoot(): string {
   let current = process.cwd();
-  while (
-    current !== '/' &&
-    !existsSync(resolve(current, 'nx.json')) &&
-    !existsSync(resolve(current, '.git'))
-  ) {
+  while (current !== '/') {
+    if (
+      existsSync(resolve(current, 'nx.json')) ||
+      existsSync(resolve(current, '.git'))
+    ) {
+      return current;
+    }
     const parent = resolve(current, '..');
     if (parent === current) break;
     current = parent;
   }
-  return current;
+  return process.cwd();
 }
 
 export function resolveDefaultPaths(): { source: string; derived: string } {
   const root = findRepoRoot();
+  const source = process.env.MIGRATIONS_INBOX_DIR
+    ? resolve(process.cwd(), process.env.MIGRATIONS_INBOX_DIR, 'source.db')
+    : resolve(root, 'data/migrations/source.db');
+  const derived = process.env.DERIVED_DB_PATH
+    ? resolve(process.cwd(), process.env.DERIVED_DB_PATH)
+    : resolve(root, 'data/derived/measurements.db');
   return {
-    source: resolve(root, 'data/migrations/source.db'),
-    derived: resolve(root, 'data/derived/measurements.db'),
+    source,
+    derived,
   };
 }
 

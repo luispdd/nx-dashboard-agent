@@ -4,6 +4,8 @@ import { KyselyMeasurementsRepository } from './kysely-measurements.repository';
 import { EtlService } from './etl.service';
 import { SeedService } from './seed.service';
 
+export * from './database-bootstrap';
+
 @Global()
 @Module({
   providers: [

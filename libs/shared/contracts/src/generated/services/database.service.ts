@@ -106,4 +106,32 @@ export class DatabaseService {
             context: this.createContextWithClientId(options?.context)
         });
     }
+
+    appControllerResetDemoDatabase(observe?: 'body', options?: RequestOptions<'json'>): Observable<DatabaseStatusDto>;
+    appControllerResetDemoDatabase(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<DatabaseStatusDto>>;
+    appControllerResetDemoDatabase(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<DatabaseStatusDto>>;
+    /** Generates fresh synthetic seed telemetry and runs ETL with demo metadata */
+    appControllerResetDemoDatabase(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/database/reset-demo`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('post', url, {
+            body: null,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
 }

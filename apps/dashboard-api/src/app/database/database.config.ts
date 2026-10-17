@@ -6,6 +6,22 @@ export interface DatabaseConfig {
   readonly: boolean;
 }
 
+export function findWorkspaceRoot(): string {
+  let current = process.cwd();
+  while (current !== '/') {
+    if (
+      existsSync(resolve(current, 'nx.json')) ||
+      existsSync(resolve(current, '.git'))
+    ) {
+      return current;
+    }
+    const parent = resolve(current, '..');
+    if (parent === current) break;
+    current = parent;
+  }
+  return process.cwd();
+}
+
 export function getDatabaseConfig(): DatabaseConfig {
   if (process.env.DERIVED_DB_PATH) {
     return {
@@ -14,18 +30,8 @@ export function getDatabaseConfig(): DatabaseConfig {
     };
   }
 
-  // Walk up from current working directory to locate data/derived/measurements.db
-  let currentDir = process.cwd();
-  while (
-    currentDir !== '/' &&
-    !existsSync(resolve(currentDir, 'data/derived/measurements.db'))
-  ) {
-    const parent = resolve(currentDir, '..');
-    if (parent === currentDir) break;
-    currentDir = parent;
-  }
-
-  const dbPath = resolve(currentDir, 'data/derived/measurements.db');
+  const root = findWorkspaceRoot();
+  const dbPath = resolve(root, 'data/derived/measurements.db');
   return {
     dbPath,
     readonly: true,

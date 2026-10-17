@@ -33,7 +33,11 @@
     "etl": "nx run dashboard-api:etl",
     "eval": "nx run agent-service:eval",
     "export:openapi": "nx run dashboard-api:export-openapi",
-    "generate:contracts": "nx run shared-contracts:generate-contracts"
+    "generate:contracts": "nx run shared-contracts:generate-contracts",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build",
+    "docker:logs": "docker compose logs -f"
   },
   "devDependencies": {
     "@angular-architects/native-federation": "~22.2.2",

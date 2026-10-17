@@ -68,4 +68,18 @@ export class AppController {
     }
     return await this.appService.importDatabase(file.file, file.filename);
   }
+
+  @Post('database/reset-demo')
+  @ApiOperation({
+    summary: 'Reset database to synthetic demo data',
+    description: 'Generates fresh synthetic seed telemetry and runs ETL with demo metadata',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Database successfully reset to demo data',
+    type: DatabaseStatusDto,
+  })
+  async resetDemoDatabase(): Promise<DatabaseStatusDto> {
+    return await this.appService.resetDemoDatabase();
+  }
 }

@@ -1,0 +1,88 @@
+services:
+  dashboard-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    image: nx-dashboard-agent/dashboard-api:latest
+    container_name: nx-dashboard-api
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - MIGRATIONS_INBOX_DIR=data/migrations
+      - DERIVED_DB_PATH=data/derived/measurements.db
+      - CONFIG_ENCRYPTION_KEY=${CONFIG_ENCRYPTION_KEY:-nx-dashboard-agent-dev-secret-key-2026}
+    volumes:
+      - ./data/migrations:/app/data/migrations
+      - ./data/derived:/app/data/derived
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const r = require('http').get('http://localhost:3000/api/database/status', (res) => process.exit(res.statusCode === 200 ? 0 : 1)); r.on('error', () => process.exit(1));",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  agent-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.agent
+    image: nx-dashboard-agent/agent-service:latest
+    container_name: nx-agent-service
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - RUNNING_IN_DOCKER=false
+      - DASHBOARD_API_URL=${DASHBOARD_API_URL:-http://localhost:3000}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://127.0.0.1:8888/v1}
+      - LLM_MODEL=${LLM_MODEL:-unsloth/Qwen3.5-4B-GGUF}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - AGENT_TEMPERATURE=${AGENT_TEMPERATURE:-0.0}
+      - RUNTIME_CONFIG_PATH=/app/data/runtime-config.json
+      - CONFIG_ENCRYPTION_KEY=${CONFIG_ENCRYPTION_KEY:-nx-dashboard-agent-dev-secret-key-2026}
+    volumes:
+      - ./data/migrations:/app/data/migrations
+      - ./data/derived:/app/data/derived
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').getcode() == 200 else 1)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  web-host:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    image: nx-dashboard-agent/web-host:latest
+    container_name: nx-web-host
+    restart: unless-stopped
+    ports:
+      - "${WEB_SHELL_PORT:-4200}:4200"
+      - "${WEB_REMOTE_PORT:-4204}:4204"
+    depends_on:
+      dashboard-api:
+        condition: service_healthy
+      agent-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:4200/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s

@@ -52,6 +52,7 @@ export class SettingsViewComponent implements OnInit {
   readonly selectedFile = signal<File | null>(null);
   readonly isDragging = signal<boolean>(false);
   readonly isUploading = signal<boolean>(false);
+  readonly isRestoringDemo = signal<boolean>(false);
   readonly uploadError = signal<string | null>(null);
   readonly uploadSuccess = signal<DatabaseStatusDto | null>(null);
 
@@ -203,6 +204,37 @@ export class SettingsViewComponent implements OnInit {
       this.uploadError.set(msg);
     } finally {
       this.isUploading.set(false);
+    }
+  }
+
+  async restoreDemoData(): Promise<void> {
+    if (this.isRestoringDemo() || this.isUploading()) {
+      return;
+    }
+
+    this.isRestoringDemo.set(true);
+    this.uploadError.set(null);
+    this.uploadSuccess.set(null);
+
+    try {
+      const result = await firstValueFrom(
+        this.databaseService.appControllerResetDemoDatabase()
+      );
+      this.uploadSuccess.set(result);
+      this.selectedFile.set(null);
+      await Promise.all([
+        this.databaseStatusService.loadStatus(),
+        this.capabilitiesService.loadCatalog(),
+      ]);
+    } catch (err: unknown) {
+      let msg = 'Failed to restore synthetic demo database.';
+      if (err && typeof err === 'object') {
+        const httpErr = err as { error?: { message?: string }; message?: string };
+        msg = httpErr.error?.message || httpErr.message || msg;
+      }
+      this.uploadError.set(msg);
+    } finally {
+      this.isRestoringDemo.set(false);
     }
   }
 }

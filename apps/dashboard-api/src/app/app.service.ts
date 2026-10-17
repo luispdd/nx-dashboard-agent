@@ -4,9 +4,10 @@ import {
   MeasurementsRepository,
 } from './database/measurements.repository.interface';
 import { DatabaseStatusDto } from './database/database-status.dto';
-import { EtlService, findRepoRoot } from './database/etl.service';
+import { EtlService, findRepoRoot, resolveDefaultPaths } from './database/etl.service';
+import { SeedService } from './database/seed.service';
 import { createWriteStream, mkdirSync } from 'fs';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
 import { pipeline } from 'stream/promises';
 import { Readable } from 'stream';
 
@@ -18,7 +19,9 @@ export class AppService {
     @Inject(MEASUREMENTS_REPOSITORY)
     private readonly repo: MeasurementsRepository,
     @Inject(EtlService)
-    private readonly etlService: EtlService
+    private readonly etlService: EtlService,
+    @Inject(SeedService)
+    private readonly seedService: SeedService
   ) {}
 
   getData(): { message: string } {
@@ -65,6 +68,35 @@ export class AppService {
       this.logger.error(`ETL transformation failed: ${msg}`);
       throw new BadRequestException(`Database validation/ETL failed: ${msg}`);
     }
+
+    if (this.repo.reconnect) {
+      this.repo.reconnect();
+    }
+
+    return await this.repo.getDatabaseStatus();
+  }
+
+  async resetDemoDatabase(): Promise<DatabaseStatusDto> {
+    const defaultPaths = resolveDefaultPaths();
+    const sourceDbPath = defaultPaths.source;
+    const derivedDbPath = defaultPaths.derived;
+
+    mkdirSync(dirname(sourceDbPath), { recursive: true });
+    mkdirSync(dirname(derivedDbPath), { recursive: true });
+
+    this.logger.log(`Generating synthetic demo database at: ${sourceDbPath}`);
+    this.seedService.generateSyntheticDatabase(sourceDbPath, {
+      durationDays: 7,
+      intervalMinutes: 5,
+      isDemo: true,
+    });
+
+    this.logger.log(`Executing ETL pipeline for demo database at: ${derivedDbPath}`);
+    this.etlService.runEtl({
+      sourceDbPath,
+      targetDbPath: derivedDbPath,
+      isDemo: true,
+    });
 
     if (this.repo.reconnect) {
       this.repo.reconnect();

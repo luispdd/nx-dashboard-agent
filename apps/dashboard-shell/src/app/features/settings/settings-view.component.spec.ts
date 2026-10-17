@@ -16,6 +16,7 @@ describe('SettingsViewComponent', () => {
   let fixture: ComponentFixture<SettingsViewComponent>;
   let mockDatabaseService: {
     appControllerImportDatabase: ReturnType<typeof vi.fn>;
+    appControllerResetDemoDatabase: ReturnType<typeof vi.fn>;
   };
   let mockDatabaseStatusService: {
     status: ReturnType<typeof signal<DatabaseStatusDto | null>>;
@@ -37,6 +38,7 @@ describe('SettingsViewComponent', () => {
 
     mockDatabaseService = {
       appControllerImportDatabase: vi.fn(),
+      appControllerResetDemoDatabase: vi.fn(),
     };
 
     mockDatabaseStatusService = {
@@ -276,6 +278,43 @@ describe('SettingsViewComponent', () => {
 
       const compiled = fixture.nativeElement as HTMLElement;
       expect(compiled.querySelector('[data-testid="upload-error-alert"]')?.textContent).toContain('Incompatible units');
+    });
+  });
+
+  describe('restoreDemoData', () => {
+    it('should call resetDemoDatabase, reload status and catalog, and display success message', async () => {
+      const demoStatus: DatabaseStatusDto = {
+        isDemo: true,
+        readingCount: 6238,
+        deviceCount: 3,
+        lastImportedAt: '2026-10-17T14:00:00Z',
+      };
+
+      mockDatabaseService.appControllerResetDemoDatabase.mockReturnValue(of(demoStatus));
+
+      await component.restoreDemoData();
+      fixture.detectChanges();
+
+      expect(mockDatabaseService.appControllerResetDemoDatabase).toHaveBeenCalled();
+      expect(component.uploadSuccess()).toEqual(demoStatus);
+      expect(component.isRestoringDemo()).toBe(false);
+      expect(mockDatabaseStatusService.loadStatus).toHaveBeenCalled();
+      expect(mockCapabilitiesService.loadCatalog).toHaveBeenCalled();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.querySelector('[data-testid="upload-success-alert"]')?.textContent).toContain('Synthetic Demo Data Restored');
+    });
+
+    it('should handle reset failure and display error alert', async () => {
+      mockDatabaseService.appControllerResetDemoDatabase.mockReturnValue(
+        throwError(() => ({ error: { message: 'Database reset failed' } }))
+      );
+
+      await component.restoreDemoData();
+      fixture.detectChanges();
+
+      expect(component.uploadError()).toContain('Database reset failed');
+      expect(component.isRestoringDemo()).toBe(false);
     });
   });
 });

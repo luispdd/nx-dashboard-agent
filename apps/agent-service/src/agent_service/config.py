@@ -41,6 +41,14 @@ def find_runtime_config_path(custom_path: Path | str | None = None) -> Path | No
     return None
 
 
+def normalize_docker_url(url: str, running_in_docker: bool = False) -> str:
+    if not running_in_docker or not url:
+        return url
+    normalized = url.replace("://127.0.0.1", "://host.docker.internal")
+    normalized = normalized.replace("://localhost", "://host.docker.internal")
+    return normalized
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(str(find_repo_root() / ".env"), ".env"),
@@ -53,10 +61,21 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     dashboard_api_url: str = "http://localhost:3000"
     runtime_config_path: str | None = None
+    running_in_docker: bool = False
 
     def model_post_init(self, context: Any, /) -> None:
         super().model_post_init(context)
         self.apply_runtime_config()
+        in_docker = self.running_in_docker or os.getenv("RUNNING_IN_DOCKER", "").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+        if in_docker:
+            self.running_in_docker = True
+            self.llm_base_url = normalize_docker_url(
+                self.llm_base_url, running_in_docker=True
+            )
 
     def apply_runtime_config(self) -> None:
         target_path = find_runtime_config_path(self.runtime_config_path)

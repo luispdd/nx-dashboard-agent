@@ -3,6 +3,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { AppService } from './app.service';
 import { MEASUREMENTS_REPOSITORY } from './database/measurements.repository.interface';
 import { EtlService } from './database/etl.service';
+import { SeedService } from './database/seed.service';
 import { BadRequestException } from '@nestjs/common';
 import { Readable } from 'stream';
 
@@ -31,6 +32,10 @@ describe('AppService', () => {
     }),
   };
 
+  const mockSeedService = {
+    generateSyntheticDatabase: vi.fn(),
+  };
+
   beforeAll(async () => {
     const app = await Test.createTestingModule({
       providers: [
@@ -42,6 +47,10 @@ describe('AppService', () => {
         {
           provide: EtlService,
           useValue: mockEtlService,
+        },
+        {
+          provide: SeedService,
+          useValue: mockSeedService,
         },
       ],
     }).compile();
@@ -82,6 +91,26 @@ describe('AppService', () => {
       expect(mockEtlService.runEtl).toHaveBeenCalled();
       expect(mockRepo.reconnect).toHaveBeenCalled();
       expect(result).toBeDefined();
+    });
+  });
+
+  describe('resetDemoDatabase', () => {
+    it('should generate synthetic database, execute ETL with isDemo: true, reconnect, and return status', async () => {
+      const result = await service.resetDemoDatabase();
+      expect(mockSeedService.generateSyntheticDatabase).toHaveBeenCalledWith(
+        expect.stringContaining('source.db'),
+        expect.objectContaining({ isDemo: true })
+      );
+      expect(mockEtlService.runEtl).toHaveBeenCalledWith(
+        expect.objectContaining({ isDemo: true })
+      );
+      expect(mockRepo.reconnect).toHaveBeenCalled();
+      expect(result).toEqual({
+        isDemo: true,
+        readingCount: 100,
+        deviceCount: 2,
+        lastImportedAt: '2026-10-16T12:00:00Z',
+      });
     });
   });
 });

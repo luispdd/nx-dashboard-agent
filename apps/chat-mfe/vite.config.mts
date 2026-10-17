@@ -42,6 +42,7 @@ function remoteEntryDevPlugin(): Plugin {
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/apps/chat-mfe',
+  envDir: '../../',
   server: {
     port: 4204,
     host: 'localhost',

@@ -1,4 +1,5 @@
-import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
+import { existsSync } from 'node:fs';
 import Database from 'better-sqlite3';
 import { Kysely, SqliteDialect, sql } from 'kysely';
 import { DatabaseSchema } from './database.schema';
@@ -12,6 +13,9 @@ import {
   StatsRow,
 } from './measurements.repository.interface';
 import { getDatabaseConfig } from './database.config';
+import { autoBootstrapDatabase } from './database-bootstrap';
+import { EtlService } from './etl.service';
+import { SeedService } from './seed.service';
 
 @Injectable()
 export class KyselyMeasurementsRepository
@@ -20,11 +24,22 @@ export class KyselyMeasurementsRepository
   private db: Kysely<DatabaseSchema>;
   private sqlite: Database.Database;
 
-  constructor(@Optional() sqliteInstance?: Database.Database) {
+  constructor(
+    @Optional() sqliteInstance?: Database.Database,
+    @Optional() @Inject(EtlService) private readonly etlService?: EtlService,
+    @Optional() @Inject(SeedService) private readonly seedService?: SeedService
+  ) {
     if (sqliteInstance) {
       this.sqlite = sqliteInstance;
     } else {
       const config = getDatabaseConfig();
+      if (!existsSync(config.dbPath)) {
+        autoBootstrapDatabase({
+          derivedDbPath: config.dbPath,
+          seedService: this.seedService,
+          etlService: this.etlService,
+        });
+      }
       this.sqlite = new Database(config.dbPath, {
         readonly: config.readonly,
         fileMustExist: true,
