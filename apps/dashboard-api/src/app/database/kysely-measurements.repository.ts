@@ -17,8 +17,8 @@ import { getDatabaseConfig } from './database.config';
 export class KyselyMeasurementsRepository
   implements MeasurementsRepository, OnModuleDestroy
 {
-  private readonly db: Kysely<DatabaseSchema>;
-  private readonly sqlite: Database.Database;
+  private db: Kysely<DatabaseSchema>;
+  private sqlite: Database.Database;
 
   constructor(@Optional() sqliteInstance?: Database.Database) {
     if (sqliteInstance) {
@@ -31,6 +31,24 @@ export class KyselyMeasurementsRepository
       });
     }
 
+    this.db = new Kysely<DatabaseSchema>({
+      dialect: new SqliteDialect({
+        database: this.sqlite,
+      }),
+    });
+  }
+
+  reconnect(): void {
+    try {
+      this.sqlite.close();
+    } catch {
+      // ignore if already closed
+    }
+    const config = getDatabaseConfig();
+    this.sqlite = new Database(config.dbPath, {
+      readonly: config.readonly,
+      fileMustExist: true,
+    });
     this.db = new Kysely<DatabaseSchema>({
       dialect: new SqliteDialect({
         database: this.sqlite,

@@ -37,13 +37,6 @@
         "cwd": "apps/agent-service"
       }
     },
-    "etl": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "uv run etl",
-        "cwd": "apps/agent-service"
-      }
-    },
     "eval": {
       "executor": "nx:run-commands",
       "options": {

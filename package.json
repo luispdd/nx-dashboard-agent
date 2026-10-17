@@ -30,7 +30,7 @@
     "affected": "nx affected -t lint test build",
     "e2e": "playwright test -c e2e/playwright.config.ts",
     "seed": "nx run agent-service:seed",
-    "etl": "nx run agent-service:etl",
+    "etl": "nx run dashboard-api:etl",
     "eval": "nx run agent-service:eval",
     "export:openapi": "nx run dashboard-api:export-openapi",
     "generate:contracts": "nx run shared-contracts:generate-contracts"
@@ -113,6 +113,7 @@
     "@angular/forms": "~22.2.2",
     "@angular/platform-browser": "~22.2.2",
     "@angular/router": "~22.2.2",
+    "@fastify/multipart": "^9",
     "@fastify/static": "^10.1.6",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",

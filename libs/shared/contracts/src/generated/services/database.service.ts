@@ -72,4 +72,38 @@ export class DatabaseService {
             context: this.createContextWithClientId(options?.context)
         });
     }
+
+    appControllerImportDatabase(file?: Blob, observe?: 'body', options?: RequestOptions<'json'>): Observable<DatabaseStatusDto>;
+    appControllerImportDatabase(file?: Blob, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<DatabaseStatusDto>>;
+    appControllerImportDatabase(file?: Blob, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<DatabaseStatusDto>>;
+    appControllerImportDatabase(file?: Blob, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/api/database/import`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Remove Content-Type for multipart (browser will set it with boundary)
+        headers = headers.delete('Content-Type');
+
+        const formData = new FormData();
+        if (file !== undefined) {
+            formData.append('file', file);
+        }
+
+        return this.httpClient.request('post', url, {
+            body: formData,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
 }

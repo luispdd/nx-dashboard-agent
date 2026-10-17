@@ -65,3 +65,5 @@ __pycache__/
 data/migrations/*.db
 data/derived/*.db
 data/runtime-config.json
+playwright-report/
+test-results/

@@ -92,6 +92,9 @@ Full details, milestones and decisions: `iot-dashboard-agent-plan.md`. Read the 
 - **Streaming Chat Submit Button State Assertions**: When chat input forms clear text immediately on submission (`setText('')`), the send button remains disabled even after stream completion (`disabled={!text.trim() || isStreaming}`). Never assert `expect(sendBtn).toBeEnabled()`; verify stream completion by asserting `expect(stopBtn).not.toBeVisible()` and `expect(sendBtn).toBeVisible()`.
 - **Zoneless Angular `ngOnInit` Async Tracking in Vitest**: Angular executes component lifecycle hooks synchronously and does not await promises returned by `async ngOnInit()`. In zoneless testing (`provideExperimentalZonelessChangeDetection`), `await fixture.whenStable()` does not wait for untracked native microtasks or async dynamic module loaders. Expose and store the initialization promise (e.g. `protected mountPromise: Promise<void> | null`) and await it explicitly (`await fixture.componentInstance['mountPromise']`) before asserting post-initialization state or flushing component effects.
 - **Sequential Execution for E2E Tests with Local LLMs (`workers: 1`)**: Running Playwright E2E tests with parallel workers (`workers > 1`) against a local LLM server divides GPU/CPU compute and queues requests, inflating streaming latency (from ~7s to >60s) and triggering test assertion timeouts. Configure `workers: 1` in `e2e/playwright.config.ts` so end-to-end integration tests execute sequentially at full model inference throughput.
+- **`better-sqlite3` Native Addon & Bun Crash**: Running scripts that load `better-sqlite3` directly via `bun run` or `bun` triggers a fatal N-API panic (`Error::New napi_get_last_error_info`). For standalone CLI runners touching `better-sqlite3` (e.g. `apps/dashboard-api/src/etl-cli.ts`), run with Node.js and `jiti` (`node apps/dashboard-api/src/etl-runner.cjs`), not bare `bun`.
+- **Linux Inode Detachment on Atomic File Swaps (`reconnect()`)**: On Linux, replacing an SQLite file atomically via `fs.renameSync` associates the path with a new inode. Existing open file descriptors continue querying the unlinked old inode. Persistence repositories (e.g. `KyselyMeasurementsRepository`) must close and recreate their database instance (`reconnect()`) immediately following an ETL atomic swap.
+- **Angular Template Linter A11y on Dropzones**: Adding `(click)` handlers to custom upload dropzone container elements (`<div>`) triggers `@angular-eslint/template` errors (`click-events-have-key-events` and `interactive-supports-focus`). Ensure the dropzone element defines `tabindex="0"`, `role="button"`, and keyboard listeners (`(keydown.enter)` / `(keydown.space)`).
 
 ## Commands
 
@@ -102,7 +105,7 @@ nx serve <project>                                  # run a project (dashboard-s
 nx run-many -t serve --outputStyle=stream           # run all dev servers simultaneously with real-time logs
 bun run e2e                                         # run unified workspace Playwright E2E tests against live stack
 nx run agent-service:seed                           # generate synthetic source SQLite DB
-nx run agent-service:etl                            # run ETL pipeline to build derived DB
+nx run dashboard-api:etl                            # run in-process ETL pipeline to build derived DB
 nx run agent-service:eval                           # run agent evaluation benchmark against active LLM
 nx run dashboard-api:export-openapi                 # export OpenAPI spec to dist/apps/dashboard-api/openapi.json
 nx run shared-contracts:generate-contracts          # generate Angular httpResource services from openapi.json

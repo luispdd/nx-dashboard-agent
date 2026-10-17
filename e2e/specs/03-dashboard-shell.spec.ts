@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test.describe('Dashboard Shell Live End-to-End Suite', () => {
   test('should navigate between Trends, Distribution, and Settings views', async ({ page }) => {
@@ -101,5 +105,47 @@ test.describe('Dashboard Shell Live End-to-End Suite', () => {
     await expect(page.locator('[data-testid="save-success-alert"]')).toContainText(
       'saved successfully'
     );
+  });
+
+  test('should upload SQLite database in Settings view and trigger ETL with live reactivity', async ({ page }) => {
+    await page.goto('/settings');
+
+    // Verify side-by-side cards
+    const uploadCard = page.locator('[data-testid="database-upload-card"]');
+    await expect(uploadCard).toBeVisible();
+    await expect(page.locator('[data-testid="llm-settings-card"]')).toBeVisible();
+
+    // Verify upload button is disabled before file selection
+    const uploadBtn = page.locator('[data-testid="upload-database-btn"]');
+    await expect(uploadBtn).toBeDisabled();
+
+    // Verify dropzone is present
+    await expect(page.locator('[data-testid="database-dropzone"]')).toBeVisible();
+
+    // Select the valid SQLite database fixture
+    const fileInput = page.locator('[data-testid="database-file-input"]');
+    const fixturePath = path.resolve(__dirname, '../fixtures/test-telemetry.sqlite');
+    await fileInput.setInputFiles(fixturePath);
+
+    // Verify file preview is rendered with name and upload button enabled
+    await expect(page.locator('[data-testid="selected-file-preview"]')).toBeVisible();
+    await expect(page.locator('[data-testid="selected-file-name"]')).toContainText('test-telemetry.sqlite');
+    await expect(uploadBtn).toBeEnabled();
+
+    // Trigger Upload and ETL execution
+    await uploadBtn.click();
+
+    // Verify success alert renders after ETL execution
+    const successAlert = page.locator('[data-testid="upload-success-alert"]');
+    await expect(successAlert).toBeVisible({ timeout: 15000 });
+    await expect(successAlert).toContainText('Telemetry Ingested & ETL Executed Successfully!');
+
+    // Verify that the active status badge updates to Imported Telemetry
+    const statusBadge = page.locator('[data-testid="active-db-status-badge"]');
+    await expect(statusBadge).toBeVisible();
+    await expect(statusBadge).toContainText('Imported Telemetry');
+
+    // Verify toolbar Demo Data badge is no longer rendered
+    await expect(page.locator('[data-testid="demo-data-badge"]')).not.toBeVisible();
   });
 });

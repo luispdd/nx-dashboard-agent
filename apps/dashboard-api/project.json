@@ -73,6 +73,12 @@
       "options": {
         "command": "EXPORT_OPENAPI=true node dist/apps/dashboard-api/main.js"
       }
+    },
+    "etl": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/dashboard-api/src/etl-runner.cjs"
+      }
     }
   }
 }

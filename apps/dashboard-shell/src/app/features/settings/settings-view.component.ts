@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   signal,
   OnInit,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -11,6 +12,10 @@ import {
   FormControl,
   Validators,
 } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
+import { DatabaseService, DatabaseStatusDto } from 'shared-contracts';
+import { DatabaseStatusService } from '../../core/services/database-status.service';
+import { CapabilitiesService } from '../../core/services/capabilities.service';
 
 export interface LlmSettingsConfig {
   baseUrl: string;
@@ -35,9 +40,20 @@ export const SETTINGS_STORAGE_KEY = 'dashboard_llm_settings';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsViewComponent implements OnInit {
+  private readonly databaseService = inject(DatabaseService);
+  readonly databaseStatusService = inject(DatabaseStatusService);
+  private readonly capabilitiesService = inject(CapabilitiesService);
+
   readonly isApiKeyMasked = signal<boolean>(true);
   readonly saveStatus = signal<'idle' | 'saved' | 'error'>('idle');
   readonly statusMessage = signal<string>('');
+
+  // Database ingestion signals
+  readonly selectedFile = signal<File | null>(null);
+  readonly isDragging = signal<boolean>(false);
+  readonly isUploading = signal<boolean>(false);
+  readonly uploadError = signal<string | null>(null);
+  readonly uploadSuccess = signal<DatabaseStatusDto | null>(null);
 
   readonly settingsForm = new FormGroup({
     baseUrl: new FormControl<string>(DEFAULT_LLM_SETTINGS.baseUrl, {
@@ -102,6 +118,91 @@ export class SettingsViewComponent implements OnInit {
       }
     } catch {
       // Fallback to default form values on read failure
+    }
+  }
+
+  // File Upload & ETL Actions
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  onFileDropped(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.setFile(files[0]);
+    }
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.setFile(input.files[0]);
+      input.value = '';
+    }
+  }
+
+  private setFile(file: File): void {
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!['.db', '.sqlite', '.sqlite3'].includes(ext)) {
+      this.uploadError.set(`Invalid file extension "${ext}". Please upload a .db, .sqlite, or .sqlite3 file.`);
+      return;
+    }
+    this.uploadError.set(null);
+    this.uploadSuccess.set(null);
+    this.selectedFile.set(file);
+  }
+
+  clearSelectedFile(): void {
+    this.selectedFile.set(null);
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  async uploadDatabase(): Promise<void> {
+    const file = this.selectedFile();
+    if (!file || this.isUploading()) {
+      return;
+    }
+
+    this.isUploading.set(true);
+    this.uploadError.set(null);
+    this.uploadSuccess.set(null);
+
+    try {
+      const result = await firstValueFrom(
+        this.databaseService.appControllerImportDatabase(file)
+      );
+      this.uploadSuccess.set(result);
+      this.selectedFile.set(null);
+      await Promise.all([
+        this.databaseStatusService.loadStatus(),
+        this.capabilitiesService.loadCatalog(),
+      ]);
+    } catch (err: unknown) {
+      let msg = 'Failed to upload database and execute ETL.';
+      if (err && typeof err === 'object') {
+        const httpErr = err as { error?: { message?: string }; message?: string };
+        msg = httpErr.error?.message || httpErr.message || msg;
+      }
+      this.uploadError.set(msg);
+    } finally {
+      this.isUploading.set(false);
     }
   }
 }

@@ -52,5 +52,6 @@ export interface MeasurementsRepository {
   getSeries(options: SeriesQueryOptions): Promise<SeriesPointRow[]>;
   getStats(options: StatsQueryOptions): Promise<StatsRow[]>;
   getDatabaseStatus(): Promise<DatabaseStatus>;
+  reconnect?(): Promise<void> | void;
 }
 

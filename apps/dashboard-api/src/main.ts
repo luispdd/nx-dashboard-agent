@@ -5,6 +5,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+import fastifyMultipart from '@fastify/multipart';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 import { HttpExceptionFilter } from './app/common/http-exception.filter';
@@ -15,6 +16,12 @@ async function bootstrap() {
     new FastifyAdapter()
   );
   
+  await app.register(fastifyMultipart as any, {
+    limits: {
+      fileSize: 100 * 1024 * 1024, // 100 MB
+    },
+  });
+
   app.enableCors();
   
   const globalPrefix = 'api';
