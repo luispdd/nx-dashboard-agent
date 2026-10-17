@@ -1,32 +1,67 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Project: IoT dashboard + data agent (proof of concept) in an Nx monorepo.
+  Stack:
+    - dashboard-shell: Angular 22 host (zoneless, signals-first, SCSS + Tailwind, ApexCharts)
+    - chat-mfe: React remote (Vite, SCSS + Tailwind) loaded via Native Federation
+    - dashboard-api: NestJS, read-only access to a derived SQLite DB (Kysely, better-sqlite3)
+    - agent-service: FastAPI (Python, uv), OpenAI-compatible LLM endpoint, calls the NestJS API as tools
+    - Tooling: bun (JS), uv (Python), Vitest everywhere, one workspace-level Playwright suite (e2e/), Docker Compose
+  Closed decisions (do not reopen; ask first):
+    - Only two backend services. No gateway, gRPC, broker, Redis, sagas, outbox.
+    - No free-form SQL tool for the agent. Typed, narrow tools only.
+    - The agent service never opens the DB; it calls the NestJS API.
+    - Anomaly statistics are computed deterministically in Python; the LLM only interprets results.
+    - LLM provider is configuration (LLM_BASE_URL, LLM_MODEL, LLM_API_KEY), never hardcoded.
+    - OpenAPI specs are the contract between services; clients are generated, never hand-written.
+    - device_id is a string (e.g. 'esp32c6').
+    - Missing DB triggers demo data (is_demo), shown in the toolbar. Real ingestion is on demand from Settings.
+  Data rules (see skill data-and-time-rules):
+    - Timestamps are UTC with Z everywhere internally. The ETL normalizes the zone-less source values.
+    - Readings are scheduled by default. On-demand readings (source is_fine_tuned) are excluded from aggregates
+      unless explicitly requested, and are exposed as sampling: "scheduled" | "on_demand".
+    - The source DB is read-only input in data/migrations/. Never write to it.
+  Conventions:
+    - Never edit generated code. Change the contract and regenerate.
+    - No secrets or private data in the repo. Use the synthetic seed generator for fixtures.
+    - Trade-off decisions go in docs/adr/ (context, decision, consequences).
+    - Relevant skills live in .agents/skills/. Load them before working in their area.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - State the why, the scope, and an explicit Non-goals section.
+    - Describe one demonstrable vertical slice. If it needs more than about a day or touches more than two projects, propose a split.
+    - Do not reopen closed decisions from AGENTS.md. If one seems wrong, flag it as an open question.
+    - Note the OpenAPI/contract impact and any ADR needed.
+  specs:
+    - Write requirements with testable scenarios (given / when / then). Prefer observable behavior and contracts over implementation details.
+    - Every scenario must map to at least one test or an explicit manual check listed in tasks.
+    - Specify error and empty-data behavior.
+    - Follow data-and-time-rules for timestamps (UTC with Z), units, metric keys and sampling.
+    - Do not paste large code. Only API shapes, tool schemas, data rules and acceptance scenarios.
+    - If two specs or artifacts disagree, stop and ask. Do not silently pick one.
+  design:
+    - Reference or create an ADR in docs/adr/ for decisions with trade-offs.
+    - Respect Nx module boundaries and the service split (agent-service reaches data only through the NestJS API).
+    - List API/tool contract changes and the regeneration steps (export-openapi, generate-contracts).
+  tasks:
+    - Keep tasks small enough to finish and verify one at a time, in dependency order.
+    - Include test tasks for new behavior, and an eval case when agent behavior changes.
+    - Include contract tasks (update OpenAPI, regenerate clients) when an API changes.
+    - Include a final task to run lint, typecheck and tests with nx affected, and to update the spec if reality diverged.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+operations:
+  apply:
+    guidance:
+      - Implement only what the active change specifies. If something is missing, update the spec or ask.
+      - Load the matching skills (and the *-quirks skill when debugging) before editing a project.
+      - Use nx (not bunx nx), bun for JS packages, and uv for Python. Never use npm, npx, yarn, pnpm or pip.
+      - Prefer nx generators and nx affected. Ask before adding a dependency.
+      - Never edit generated code. Leave no debug or commented-out code.
+      - Verify with lint, types and tests for the affected projects, and walk through each spec scenario.
+  archive:
+    guidance:
+      - Confirm the definition of done first. Lint, types and tests pass, contracts are regenerated, and tasks match what was built.
+      - If implementation diverged from the spec, update the spec and say why before archiving.
+      - Summarize the archive outcome before finishing.
