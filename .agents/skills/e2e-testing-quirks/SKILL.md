@@ -1,0 +1,15 @@
+---
+name: e2e-testing-quirks
+description: Use when writing, running or debugging the Playwright end-to-end suite in e2e/: web server lifecycle, Nx task conflicts, assertions against dynamic data or streaming chat, and local LLM execution settings.
+---
+
+# E2E testing quirks
+
+Pitfalls specific to the unified Playwright E2E suite.
+
+- **Playwright `dependsOn` vs `webServer` Conflict**: `@nx/playwright/plugin` infers `"dependsOn": [{"target": "serve", "projects": ["<app>"]}]`. This causes port collision errors if the dev server is already running, or hangs batch runs indefinitely because the dev server never exits. Override `targets.e2e` in `<app>-e2e/project.json` with `"dependsOn": []` and let Playwright's native `webServer` block manage the lifecycle (`reuseExistingServer: true`), adding `reporter: [['list'], ['html', { open: 'never' }]]` in `playwright.config.mts` so Playwright never blocks CLI execution.
+- **Playwright Multi-WebServer for MFEs**: When testing an MFE host that loads remotes dynamically, configure `webServer` in `playwright.config.mts` as an array (host + remotes) with `reuseExistingServer: true` so all endpoints are up before tests execute.
+- **Single Workspace E2E Suite vs. Parallel Per-App Playwright WebServers**: Multiple per-app E2E projects (`dashboard-shell-e2e`, `dashboard-api:e2e`) concurrently spawning dev servers via nested `bun nx run <service>:serve` in Playwright `webServer` blocks trigger Nx circular task detection (`Nx detected a recursive loop of tasks: ... -> dashboard-api:serve -> dashboard-api:build`) and hang the interactive TUI. Maintain strictly one top-level workspace E2E suite (`e2e/`) orchestrating the entire stack once and testing each tier sequentially.
+- **E2E Invariance to Dynamic Database State**: End-to-end tests against real SQLite data must never assert hardcoded record counts, static element numbers, or exact measurement values. If testing tables or charts, assert structural rendering and populated rows (`tbody tr`), and use point-count filters (e.g. "50 pts") rather than relative historical presets ("Last 1d") to remain resilient across data migrations.
+- **Streaming Chat Submit Button State Assertions**: When chat input forms clear text immediately on submission (`setText('')`), the send button remains disabled even after stream completion (`disabled={!text.trim() || isStreaming}`). Never assert `expect(sendBtn).toBeEnabled()`; verify stream completion by asserting `expect(stopBtn).not.toBeVisible()` and `expect(sendBtn).toBeVisible()`.
+- **Sequential Execution for E2E Tests with Local LLMs (`workers: 1`)**: Running Playwright E2E tests with parallel workers (`workers > 1`) against a local LLM server divides GPU/CPU compute and queues requests, inflating streaming latency (from ~7s to >60s) and triggering test assertion timeouts. Configure `workers: 1` in `e2e/playwright.config.ts` so end-to-end integration tests execute sequentially at full model inference throughput.
