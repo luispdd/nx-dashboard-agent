@@ -14,6 +14,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FastifyRequest } from 'fastify';
+import { Readable } from 'stream';
 import { AppService } from './app.service';
 import { DatabaseStatusDto } from './database/database-status.dto';
 
@@ -62,7 +63,13 @@ export class AppController {
     type: DatabaseStatusDto,
   })
   async importDatabase(@Req() req: FastifyRequest): Promise<DatabaseStatusDto> {
-    const file = await (req as any).file?.();
+    const file = await (
+      req as unknown as {
+        file?: () => Promise<
+          { file: Readable; filename: string } | undefined
+        >;
+      }
+    ).file?.();
     if (!file) {
       throw new BadRequestException('No database file was uploaded.');
     }

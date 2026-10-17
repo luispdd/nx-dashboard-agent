@@ -8,8 +8,11 @@ export default [
       "ignores": [
         "**/dist",
         "**/out-tsc",
+        "**/.angular/**",
         "**/vitest.config.*.timestamp*",
-        "**/vite.config.*.timestamp*"
+        "**/vite.config.*.timestamp*",
+        "libs/shared/contracts/src/generated/**",
+        "**/src/generated/**"
       ]
     },
     {

@@ -72,7 +72,9 @@ def detect_peer_deviation(
             points_by_ts[p.ts][dev_id] = p.value
 
     # Compute peer medians for timestamps with at least 2 reporting devices
-    deviations_by_device: dict[str, list[tuple[str, float, float, float]]] = defaultdict(list)
+    deviations_by_device: dict[str, list[tuple[str, float, float, float]]] = (
+        defaultdict(list)
+    )
     # entry: (ts, dev_value, peer_median, delta)
 
     sorted_timestamps = sorted(points_by_ts.keys())
@@ -96,7 +98,9 @@ def detect_peer_deviation(
     for dev_id, records in deviations_by_device.items():
         current_streak: list[tuple[str, float, float, float]] = []
 
-        def flush_streak(streak: list[tuple[str, float, float, float]], target_dev: str) -> None:
+        def flush_streak(
+            streak: list[tuple[str, float, float, float]], target_dev: str
+        ) -> None:
             if len(streak) >= min_consecutive:
                 start_ts = streak[0][0]
                 end_ts = streak[-1][0]
@@ -105,7 +109,9 @@ def detect_peer_deviation(
                 mean_obs = round(statistics.mean([r[1] for r in streak]), 2)
                 mean_peer = round(statistics.mean([r[2] for r in streak]), 2)
 
-                severity: Literal["low", "medium", "high"] = "high" if abs(mean_delta) >= threshold * 2 else "medium"
+                severity: Literal["low", "medium", "high"] = (
+                    "high" if abs(mean_delta) >= threshold * 2 else "medium"
+                )
                 sign = "+" if mean_delta > 0 else ""
                 summary = (
                     f"Device {target_dev} {metric_key} deviated by {sign}{mean_delta} from peer fleet median "
@@ -156,13 +162,23 @@ def detect_spikes(
         mad = calculate_mad(values, med)
 
         # If baseline variance is near 0, fall back to standard deviation or minimum epsilon
-        scale = mad if mad > 1e-4 else (statistics.stdev(values) if len(values) > 1 and statistics.stdev(values) > 1e-4 else 0.1)
+        scale = (
+            mad
+            if mad > 1e-4
+            else (
+                statistics.stdev(values)
+                if len(values) > 1 and statistics.stdev(values) > 1e-4
+                else 0.1
+            )
+        )
 
         for p in points:
             diff = abs(p.value - med)
             score = diff / scale
             if score >= z_threshold:
-                severity: Literal["low", "medium", "high"] = "high" if score >= z_threshold * 2 else "medium"
+                severity: Literal["low", "medium", "high"] = (
+                    "high" if score >= z_threshold * 2 else "medium"
+                )
                 delta = round(p.value - med, 2)
                 sign = "+" if delta > 0 else ""
                 summary = (
@@ -211,7 +227,9 @@ def detect_flatlines(
                 end_ts = streak[-1].ts
                 stuck_val = streak[0].value
                 duration_pts = len(streak)
-                severity: Literal["low", "medium", "high"] = "high" if duration_pts >= min_points * 3 else "medium"
+                severity: Literal["low", "medium", "high"] = (
+                    "high" if duration_pts >= min_points * 3 else "medium"
+                )
                 summary = (
                     f"Device {target_dev} {metric_key} flatlined at constant value {stuck_val} "
                     f"over {duration_pts} consecutive readings ({start_ts} to {end_ts})."
@@ -226,7 +244,11 @@ def detect_flatlines(
                         evidence={
                             "stuck_value": stuck_val,
                             "consecutive_points": duration_pts,
-                            "range": round(max(p.value for p in streak) - min(p.value for p in streak), 4),
+                            "range": round(
+                                max(p.value for p in streak)
+                                - min(p.value for p in streak),
+                                4,
+                            ),
                         },
                         summary=summary,
                     )
@@ -269,7 +291,9 @@ def detect_gaps(
 
             if gap_seconds > max_allowed_gap_seconds:
                 gap_minutes = round(gap_seconds / 60, 1)
-                severity: Literal["low", "medium", "high"] = "high" if gap_minutes >= 60 else "medium"
+                severity: Literal["low", "medium", "high"] = (
+                    "high" if gap_minutes >= 60 else "medium"
+                )
                 summary = (
                     f"Telemetry gap of {gap_minutes} minutes detected on device {dev_id} "
                     f"between {prev_p.ts} and {curr_p.ts}."

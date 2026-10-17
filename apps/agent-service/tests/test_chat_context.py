@@ -39,7 +39,9 @@ def test_build_system_prompt_with_context() -> None:
         ),
     )
 
-    prompt = build_system_prompt(now_utc=fixed_time, user_timezone="Europe/Paris", context=ctx)
+    prompt = build_system_prompt(
+        now_utc=fixed_time, user_timezone="Europe/Paris", context=ctx
+    )
 
     assert "Active Dashboard Context" in prompt
     assert "Active Metric: temperature (°C)" in prompt

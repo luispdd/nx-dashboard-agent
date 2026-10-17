@@ -37,7 +37,10 @@ async def test_evaluate_single_case_pass() -> None:
             "event": "tool_call",
             "data": {
                 "tool": "get_stats",
-                "args": {"metric_key": "temperature", "from_ts": "2026-10-14T00:00:00Z"},
+                "args": {
+                    "metric_key": "temperature",
+                    "from_ts": "2026-10-14T00:00:00Z",
+                },
             },
         }
         yield {
@@ -82,4 +85,6 @@ async def test_evaluate_single_case_fail_missing_tool() -> None:
 
     res = await evaluate_single_case(case, mock_orch)
     assert res["passed"] is False
-    assert any("Expected tool 'get_stats' was not called" in r for r in res["failure_reasons"])
+    assert any(
+        "Expected tool 'get_stats' was not called" in r for r in res["failure_reasons"]
+    )

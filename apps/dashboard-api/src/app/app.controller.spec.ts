@@ -3,6 +3,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BadRequestException } from '@nestjs/common';
+import { FastifyRequest } from 'fastify';
 import { Readable } from 'stream';
 
 describe('AppController', () => {
@@ -67,7 +68,7 @@ describe('AppController', () => {
       const appController = app.get<AppController>(AppController);
       const req = {
         file: vi.fn().mockResolvedValue(null),
-      } as any;
+      } as unknown as FastifyRequest;
 
       await expect(appController.importDatabase(req)).rejects.toThrow(
         BadRequestException
@@ -82,7 +83,7 @@ describe('AppController', () => {
           file: mockStream,
           filename: 'uploaded.db',
         }),
-      } as any;
+      } as unknown as FastifyRequest;
 
       const result = await appController.importDatabase(req);
       expect(mockAppService.importDatabase).toHaveBeenCalledWith(

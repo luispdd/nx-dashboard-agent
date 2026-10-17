@@ -24,6 +24,18 @@ export interface UseChatStreamOptions {
   initialMessages?: ChatMessage[];
 }
 
+interface StreamEventPayload {
+  content?: string;
+  delta?: string;
+  call_id?: string;
+  tool?: string;
+  args?: Record<string, unknown>;
+  result?: unknown;
+  output?: unknown;
+  message?: string;
+  [key: string]: unknown;
+}
+
 export interface UseChatStreamReturn {
   messages: ChatMessage[];
   isStreaming: boolean;
@@ -176,7 +188,7 @@ export function useChatStream(options: UseChatStreamOptions = {}): UseChatStream
 
             if (trimmedLine.startsWith('data:')) {
               const rawData = trimmedLine.slice(5).trim();
-              let parsedData: any = {};
+              let parsedData: StreamEventPayload = {};
               try {
                 parsedData = JSON.parse(rawData);
               } catch {
@@ -229,10 +241,15 @@ export function useChatStream(options: UseChatStreamOptions = {}): UseChatStream
                   const existingSteps = target.toolCalls || [];
                   const updatedSteps = existingSteps.map((s) => {
                     if (s.callId === callId) {
+                      const hasError =
+                        result !== null &&
+                        typeof result === 'object' &&
+                        'error' in result &&
+                        Boolean((result as { error?: unknown }).error);
                       return {
                         ...s,
                         result,
-                        status: (result && result.error ? 'error' : 'completed') as ToolStep['status'],
+                        status: (hasError ? 'error' : 'completed') as ToolStep['status'],
                       };
                     }
                     return s;
@@ -292,8 +309,8 @@ export function useChatStream(options: UseChatStreamOptions = {}): UseChatStream
           }
           return prev;
         });
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
           // Handled by abortStream
           return;
         }

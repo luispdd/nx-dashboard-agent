@@ -38,11 +38,13 @@ def test_timestamp_validation_and_resolution() -> None:
 def test_schema_forbid_extra_fields() -> None:
     # Disallows unexpected fields
     with pytest.raises(ValidationError):
-        GetStatsInput.model_validate({
-            "metric_key": "temperature",
-            "device_id": "esp32c6",
-            "unexpected_field": "disallowed",
-        })
+        GetStatsInput.model_validate(
+            {
+                "metric_key": "temperature",
+                "device_id": "esp32c6",
+                "unexpected_field": "disallowed",
+            }
+        )
 
 
 def test_openai_tool_schemas() -> None:
@@ -102,7 +104,9 @@ async def test_tool_execution_success() -> None:
             )
         return httpx.Response(404)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         client = DashboardApiClient(client=raw_client)
         registry = build_default_tool_registry()
 

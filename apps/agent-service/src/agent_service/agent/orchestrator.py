@@ -81,7 +81,9 @@ class AgentOrchestrator:
             history: list[dict[str, Any]] = [
                 {
                     "role": "system",
-                    "content": build_system_prompt(user_timezone=user_timezone, context=context),
+                    "content": build_system_prompt(
+                        user_timezone=user_timezone, context=context
+                    ),
                 }
             ]
             history.extend(messages)
@@ -126,13 +128,19 @@ class AgentOrchestrator:
                             for tc in delta.tool_calls:
                                 idx = tc.index
                                 if idx not in tool_calls_map:
-                                    tool_calls_map[idx] = {"id": "", "name": "", "arguments": ""}
+                                    tool_calls_map[idx] = {
+                                        "id": "",
+                                        "name": "",
+                                        "arguments": "",
+                                    }
                                 if tc.id:
                                     tool_calls_map[idx]["id"] += tc.id
                                 if tc.function and tc.function.name:
                                     tool_calls_map[idx]["name"] += tc.function.name
                                 if tc.function and tc.function.arguments:
-                                    tool_calls_map[idx]["arguments"] += tc.function.arguments
+                                    tool_calls_map[idx]["arguments"] += (
+                                        tc.function.arguments
+                                    )
 
                     llm_duration_ms = round((time.perf_counter() - t0_llm) * 1000, 2)
                     if not finish_reason:
@@ -176,20 +184,24 @@ class AgentOrchestrator:
                 if tool_calls_map:
                     formatted_tool_calls = []
                     for _, tc_info in sorted(tool_calls_map.items()):
-                        formatted_tool_calls.append({
-                            "id": tc_info["id"] or f"call_{step}",
-                            "type": "function",
-                            "function": {
-                                "name": tc_info["name"],
-                                "arguments": tc_info["arguments"],
-                            },
-                        })
+                        formatted_tool_calls.append(
+                            {
+                                "id": tc_info["id"] or f"call_{step}",
+                                "type": "function",
+                                "function": {
+                                    "name": tc_info["name"],
+                                    "arguments": tc_info["arguments"],
+                                },
+                            }
+                        )
 
-                    history.append({
-                        "role": "assistant",
-                        "content": full_text or None,
-                        "tool_calls": formatted_tool_calls,
-                    })
+                    history.append(
+                        {
+                            "role": "assistant",
+                            "content": full_text or None,
+                            "tool_calls": formatted_tool_calls,
+                        }
+                    )
 
                     # Execute each tool call sequentially
                     for tc in formatted_tool_calls:
@@ -232,11 +244,13 @@ class AgentOrchestrator:
                         }
 
                         # Append tool result to history for next model turn
-                        history.append({
-                            "role": "tool",
-                            "tool_call_id": call_id,
-                            "content": json.dumps(tool_output),
-                        })
+                        history.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": call_id,
+                                "content": json.dumps(tool_output),
+                            }
+                        )
 
                     reset_current_step(token_step)
                     # Loop to next step so LLM receives the tool results
@@ -249,7 +263,9 @@ class AgentOrchestrator:
                 return
 
             # Max steps exceeded guardrail
-            logger.warning("Max tool steps (%d) reached without model completion.", self.max_steps)
+            logger.warning(
+                "Max tool steps (%d) reached without model completion.", self.max_steps
+            )
             _log_summary("max_steps")
             yield {
                 "event": "error",

@@ -67,7 +67,9 @@ class Settings(BaseSettings):
     def model_post_init(self, context: Any, /) -> None:
         super().model_post_init(context)
         self.apply_runtime_config()
-        in_docker = self.running_in_docker or os.getenv("RUNNING_IN_DOCKER", "").lower() in (
+        in_docker = self.running_in_docker or os.getenv(
+            "RUNNING_IN_DOCKER", ""
+        ).lower() in (
             "true",
             "1",
             "yes",

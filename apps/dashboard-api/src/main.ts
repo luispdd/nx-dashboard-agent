@@ -16,11 +16,14 @@ async function bootstrap() {
     new FastifyAdapter()
   );
   
-  await app.register(fastifyMultipart as any, {
-    limits: {
-      fileSize: 100 * 1024 * 1024, // 100 MB
-    },
-  });
+  await app.register(
+    fastifyMultipart as unknown as Parameters<NestFastifyApplication['register']>[0],
+    {
+      limits: {
+        fileSize: 100 * 1024 * 1024, // 100 MB
+      },
+    }
+  );
 
   app.enableCors();
   

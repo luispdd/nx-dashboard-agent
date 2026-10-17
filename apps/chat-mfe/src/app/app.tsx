@@ -22,9 +22,10 @@ export function App({ mountOptions }: AppProps = {}) {
   });
 
   // Subscribe to live context changes dispatched by the host container
+  const onContextChange = mountOptions?.onContextChange;
   useEffect(() => {
-    if (mountOptions?.onContextChange) {
-      const unsubscribe = mountOptions.onContextChange((updatedContext) => {
+    if (onContextChange) {
+      const unsubscribe = onContextChange((updatedContext) => {
         setCurrentContext(updatedContext);
       });
       return () => {
@@ -33,14 +34,15 @@ export function App({ mountOptions }: AppProps = {}) {
         }
       };
     }
-  }, [mountOptions?.onContextChange]);
+  }, [onContextChange]);
 
   // If initial context prop changes from host rerender
+  const contextProp = mountOptions?.context;
   useEffect(() => {
-    if (mountOptions?.context) {
-      setCurrentContext(mountOptions.context);
+    if (contextProp) {
+      setCurrentContext(contextProp);
     }
-  }, [mountOptions?.context]);
+  }, [contextProp]);
 
   const {
     messages,

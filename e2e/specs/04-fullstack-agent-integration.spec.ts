@@ -169,33 +169,42 @@ test.describe('Full-Stack Assistant Integration Suite', () => {
 
     const initialBox = await drawer.boundingBox();
     expect(initialBox).not.toBeNull();
-    const viewportSize = page.viewportSize()!;
+    const viewportSize = page.viewportSize();
+    expect(viewportSize).not.toBeNull();
+    if (!viewportSize) throw new Error('Missing viewport size');
     const maxAllowedWidth = Math.floor(viewportSize.width * 0.5);
 
     const handleBox = await resizeHandle.boundingBox();
     expect(handleBox).not.toBeNull();
+    if (!handleBox) throw new Error('Missing handle box');
 
     // Drag handle leftwards towards 20% of window (attempting to exceed 50% max)
-    await page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + 100);
+    await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + 100);
     await page.mouse.down();
-    await page.mouse.move(viewportSize.width * 0.2, handleBox!.y + 100, { steps: 5 });
+    await page.mouse.move(viewportSize.width * 0.2, handleBox.y + 100, { steps: 5 });
     await page.mouse.up();
 
     // Width should be clamped to at most 50% of viewport width
     const expandedBox = await drawer.boundingBox();
-    expect(expandedBox!.width).toBeLessThanOrEqual(maxAllowedWidth + 2);
-    expect(expandedBox!.width).toBeGreaterThan(450);
+    expect(expandedBox).not.toBeNull();
+    if (!expandedBox) throw new Error('Missing expanded box');
+    expect(expandedBox.width).toBeLessThanOrEqual(maxAllowedWidth + 2);
+    expect(expandedBox.width).toBeGreaterThan(450);
 
     // Drag handle rightwards towards right edge (attempting to shrink below 360px min)
     await page.waitForTimeout(50);
     const newHandleBox = await resizeHandle.boundingBox();
-    await page.mouse.move(newHandleBox!.x + newHandleBox!.width / 2, newHandleBox!.y + 100);
+    expect(newHandleBox).not.toBeNull();
+    if (!newHandleBox) throw new Error('Missing new handle box');
+    await page.mouse.move(newHandleBox.x + newHandleBox.width / 2, newHandleBox.y + 100);
     await page.mouse.down();
-    await page.mouse.move(viewportSize.width - 100, newHandleBox!.y + 100, { steps: 5 });
+    await page.mouse.move(viewportSize.width - 100, newHandleBox.y + 100, { steps: 5 });
     await page.mouse.up();
 
     // Width should be clamped to 360px
     const shrunkBox = await drawer.boundingBox();
-    expect(Math.round(shrunkBox!.width)).toBe(360);
+    expect(shrunkBox).not.toBeNull();
+    if (!shrunkBox) throw new Error('Missing shrunk box');
+    expect(Math.round(shrunkBox.width)).toBe(360);
   });
 });

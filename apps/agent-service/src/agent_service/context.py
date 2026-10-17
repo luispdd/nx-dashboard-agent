@@ -3,8 +3,12 @@ import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 
-_current_run_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("current_run_id", default=None)
-_current_step: contextvars.ContextVar[int | None] = contextvars.ContextVar("current_step", default=None)
+_current_run_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "current_run_id", default=None
+)
+_current_step: contextvars.ContextVar[int | None] = contextvars.ContextVar(
+    "current_step", default=None
+)
 
 
 def generate_run_id() -> str:

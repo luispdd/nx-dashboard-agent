@@ -13,7 +13,7 @@ import { tap } from 'rxjs/operators';
 export class RequestLoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('HTTP');
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const http = context.switchToHttp();
     const req = http.getRequest<FastifyRequest>();
     const res = http.getResponse<FastifyReply>();
@@ -21,7 +21,7 @@ export class RequestLoggingInterceptor implements NestInterceptor {
     const requestId =
       (req.headers['x-request-id'] as string) ||
       (req.headers['x-correlation-id'] as string) ||
-      (req as any).id;
+      (req as unknown as { id?: string }).id;
 
     if (requestId && res.header) {
       res.header('x-request-id', requestId);

@@ -104,10 +104,14 @@ def test_detect_gap() -> None:
 
     # 3-hour gap (180 minutes) before next reading
     after_gap = base_time + timedelta(minutes=25 + 180)
-    points.append(TelemetryPoint(ts=after_gap.strftime("%Y-%m-%dT%H:%M:%SZ"), value=20.5))
+    points.append(
+        TelemetryPoint(ts=after_gap.strftime("%Y-%m-%dT%H:%M:%SZ"), value=20.5)
+    )
 
     series = {"esp32c6": points}
-    findings = detect_gaps(series, metric_key="temperature", max_allowed_gap_seconds=900)
+    findings = detect_gaps(
+        series, metric_key="temperature", max_allowed_gap_seconds=900
+    )
     assert len(findings) == 1
     f = findings[0]
     assert f.device_id == "esp32c6"
@@ -119,20 +123,37 @@ def test_detect_all_anomalies_aggregation() -> None:
     base_time = datetime(2026, 10, 5, 0, 0, 0, tzinfo=UTC)
     series: dict[str, list[TelemetryPoint]] = {
         "esp32c6": [
-            TelemetryPoint(ts=(base_time + timedelta(minutes=5 * i)).strftime("%Y-%m-%dT%H:%M:%SZ"), value=28.0)
+            TelemetryPoint(
+                ts=(base_time + timedelta(minutes=5 * i)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                value=28.0,
+            )
             for i in range(10)
         ],
         "esp32s3": [
-            TelemetryPoint(ts=(base_time + timedelta(minutes=5 * i)).strftime("%Y-%m-%dT%H:%M:%SZ"), value=20.0)
+            TelemetryPoint(
+                ts=(base_time + timedelta(minutes=5 * i)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                value=20.0,
+            )
             for i in range(10)
         ],
         "esp32node1": [
-            TelemetryPoint(ts=(base_time + timedelta(minutes=5 * i)).strftime("%Y-%m-%dT%H:%M:%SZ"), value=20.2)
+            TelemetryPoint(
+                ts=(base_time + timedelta(minutes=5 * i)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                value=20.2,
+            )
             for i in range(10)
         ],
     }
 
-    findings = detect_all_anomalies(series, metric_key="temperature", peer_threshold=3.0)
+    findings = detect_all_anomalies(
+        series, metric_key="temperature", peer_threshold=3.0
+    )
     assert any(f.type == "peer_deviation" for f in findings)
 
 
@@ -176,18 +197,27 @@ def test_detect_injected_synthetic_anomalies() -> None:
             hum_series[dev].append(TelemetryPoint(ts=ts_iso, value=round(h_val, 2)))
 
     # 1. Peer deviation test
-    peer_anoms = detect_peer_deviation(temp_series, metric_key="temperature", threshold=3.0)
-    assert any(a.device_id == "esp32c6" and a.type == "peer_deviation" for a in peer_anoms)
+    peer_anoms = detect_peer_deviation(
+        temp_series, metric_key="temperature", threshold=3.0
+    )
+    assert any(
+        a.device_id == "esp32c6" and a.type == "peer_deviation" for a in peer_anoms
+    )
 
     # 2. Spike test
     spike_anoms = detect_spikes(hum_series, metric_key="humidity", z_threshold=3.5)
     assert any(a.device_id == "esp32s3" and a.type == "spike" for a in spike_anoms)
 
     # 3. Flatline test
-    flatline_anoms = detect_flatlines(temp_series, metric_key="temperature", min_points=12)
-    assert any(a.device_id == "esp32node1" and a.type == "flatline" for a in flatline_anoms)
+    flatline_anoms = detect_flatlines(
+        temp_series, metric_key="temperature", min_points=12
+    )
+    assert any(
+        a.device_id == "esp32node1" and a.type == "flatline" for a in flatline_anoms
+    )
 
     # 4. Gap test
-    gap_anoms = detect_gaps(temp_series, metric_key="temperature", max_allowed_gap_seconds=900)
+    gap_anoms = detect_gaps(
+        temp_series, metric_key="temperature", max_allowed_gap_seconds=900
+    )
     assert any(a.device_id == "esp32c6" and a.type == "gap" for a in gap_anoms)
-

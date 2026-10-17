@@ -5,8 +5,8 @@ import { RequestLoggingInterceptor } from './request-logging.interceptor';
 
 describe('RequestLoggingInterceptor', () => {
   let interceptor: RequestLoggingInterceptor;
-  let logSpy: any;
-  let errorSpy: any;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     interceptor = new RequestLoggingInterceptor();

@@ -12,7 +12,9 @@ def validate_iso_utc_timestamp(val: str | None) -> str | None:
         return None
     val = val.strip()
     if not ISO_UTC_REGEX.match(val):
-        raise ValueError(f"Timestamp '{val}' must be in ISO-8601 UTC format ending with Z (e.g. 2026-10-14T00:00:00Z)")
+        raise ValueError(
+            f"Timestamp '{val}' must be in ISO-8601 UTC format ending with Z (e.g. 2026-10-14T00:00:00Z)"
+        )
     return val
 
 
@@ -121,7 +123,9 @@ class GetSeriesInput(BaseModel):
 class CompareDevicesInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    metric_key: str = Field(description="Metric key to compare across devices (e.g. 'temperature')")
+    metric_key: str = Field(
+        description="Metric key to compare across devices (e.g. 'temperature')"
+    )
     from_ts: str | None = Field(
         default=None,
         description="Start timestamp in ISO-8601 UTC ending with Z",

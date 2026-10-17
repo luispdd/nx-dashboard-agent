@@ -8,7 +8,9 @@ from agent_service.main import create_app
 
 
 class MockChoiceDelta:
-    def __init__(self, content: str | None = None, tool_calls: list[Any] | None = None) -> None:
+    def __init__(
+        self, content: str | None = None, tool_calls: list[Any] | None = None
+    ) -> None:
         self.content = content
         self.tool_calls = tool_calls
 

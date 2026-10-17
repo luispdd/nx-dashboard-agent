@@ -29,7 +29,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const requestId =
       (request?.headers?.['x-request-id'] as string) ||
-      (request as any)?.id;
+      (request as unknown as { id?: string })?.id;
     if (requestId && response?.header) {
       response.header('x-request-id', requestId);
     }

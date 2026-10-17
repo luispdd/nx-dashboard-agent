@@ -13,7 +13,7 @@ describe('autoBootstrapDatabase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     existsSyncSpy = vi.spyOn(fs, 'existsSync');
-    mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockReturnValue(undefined as any);
+    mkdirSyncSpy = vi.spyOn(fs, 'mkdirSync').mockReturnValue(undefined);
 
     mockSeedService = {
       generateSyntheticDatabase: vi.fn().mockReturnValue({

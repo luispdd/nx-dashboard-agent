@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
+import { HttpStatus, BadRequestException } from '@nestjs/common';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { ArgumentsHost } from '@nestjs/common';
 

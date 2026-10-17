@@ -55,8 +55,12 @@ async def chat_stream(request: Request, body: ChatRequest) -> EventSourceRespons
     """Streams multi-step conversational agent interaction over Server-Sent Events (SSE)."""
     # Grab application state clients or instantiate defaults
     custom_llm = getattr(request.app.state, "llm_client", None)
-    dashboard_client = getattr(request.app.state, "dashboard_client", None) or DashboardApiClient()
-    tool_registry = getattr(request.app.state, "tool_registry", None) or get_tool_registry()
+    dashboard_client = (
+        getattr(request.app.state, "dashboard_client", None) or DashboardApiClient()
+    )
+    tool_registry = (
+        getattr(request.app.state, "tool_registry", None) or get_tool_registry()
+    )
 
     run_id = generate_run_id()
 

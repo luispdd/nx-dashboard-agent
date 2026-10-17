@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BadRequestException } from '@nestjs/common';
 import { StatsService } from './stats.service';
-import { MEASUREMENTS_REPOSITORY } from '../database/measurements.repository.interface';
+import { IMeasurementsRepository } from '../database/measurements.repository.interface';
 
 describe('StatsService', () => {
   let service: StatsService;
@@ -33,7 +33,7 @@ describe('StatsService', () => {
   };
 
   beforeEach(() => {
-    service = new StatsService(mockRepo as any);
+    service = new StatsService(mockRepo as unknown as IMeasurementsRepository);
   });
 
   it('should return stats with unit and device breakdown', async () => {

@@ -20,19 +20,25 @@ from agent_service.tools.registry import (
 
 
 class MockChoiceDelta:
-    def __init__(self, content: str | None = None, tool_calls: list[Any] | None = None) -> None:
+    def __init__(
+        self, content: str | None = None, tool_calls: list[Any] | None = None
+    ) -> None:
         self.content = content
         self.tool_calls = tool_calls
 
 
 class MockChunkChoice:
-    def __init__(self, delta: MockChoiceDelta, finish_reason: str | None = None) -> None:
+    def __init__(
+        self, delta: MockChoiceDelta, finish_reason: str | None = None
+    ) -> None:
         self.delta = delta
         self.finish_reason = finish_reason
 
 
 class MockChunk:
-    def __init__(self, delta: MockChoiceDelta, finish_reason: str | None = None) -> None:
+    def __init__(
+        self, delta: MockChoiceDelta, finish_reason: str | None = None
+    ) -> None:
         self.choices = [MockChunkChoice(delta, finish_reason=finish_reason)]
 
 
@@ -40,7 +46,9 @@ class DummyInput(BaseModel):
     query: str
 
 
-async def dummy_handler(params: DummyInput, client: DashboardApiClient) -> dict[str, str]:
+async def dummy_handler(
+    params: DummyInput, client: DashboardApiClient
+) -> dict[str, str]:
     return {"message": f"Processed {params.query}"}
 
 
@@ -113,7 +121,9 @@ async def test_tool_call_logging_success_and_error(caplog):
         )
         assert res_val_err["status"] == "error"
 
-    tool_records = [r for r in caplog.records if getattr(r, "event", None) == "tool_call"]
+    tool_records = [
+        r for r in caplog.records if getattr(r, "event", None) == "tool_call"
+    ]
     assert len(tool_records) == 3
 
     ok_rec = tool_records[0]
@@ -151,12 +161,16 @@ async def test_run_summary_logging_all_paths(caplog):
     )
 
     with run_context(run_id="run-success"):
-        async for _ in orch_success.run(messages=[{"role": "user", "content": "hello"}]):
+        async for _ in orch_success.run(
+            messages=[{"role": "user", "content": "hello"}]
+        ):
             pass
 
     # Path 2: LLM error
     mock_llm_err = MagicMock()
-    mock_llm_err.chat.completions.create = AsyncMock(side_effect=RuntimeError("Connection refused"))
+    mock_llm_err.chat.completions.create = AsyncMock(
+        side_effect=RuntimeError("Connection refused")
+    )
     orch_err = AgentOrchestrator(
         llm_client=mock_llm_err,
         dashboard_client=DashboardApiClient(),
@@ -164,7 +178,9 @@ async def test_run_summary_logging_all_paths(caplog):
     )
 
     with run_context(run_id="run-err"):
-        async for _ in orch_err.run(messages=[{"role": "user", "content": "error test"}]):
+        async for _ in orch_err.run(
+            messages=[{"role": "user", "content": "error test"}]
+        ):
             pass
 
     # Path 3: Max steps
@@ -178,7 +194,10 @@ async def test_run_summary_logging_all_paths(caplog):
         function = MockDeltaToolCallFunc()
 
     async def stream_loop(**kwargs: Any) -> AsyncIterator[MockChunk]:
-        yield MockChunk(MockChoiceDelta(tool_calls=[MockDeltaToolCall()]), finish_reason="tool_calls")
+        yield MockChunk(
+            MockChoiceDelta(tool_calls=[MockDeltaToolCall()]),
+            finish_reason="tool_calls",
+        )
 
     mock_llm_loop = MagicMock()
     mock_llm_loop.chat.completions.create = AsyncMock(side_effect=stream_loop)
@@ -186,7 +205,9 @@ async def test_run_summary_logging_all_paths(caplog):
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=["esp32c6"])
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         orch_loop = AgentOrchestrator(
             llm_client=mock_llm_loop,
             dashboard_client=DashboardApiClient(client=raw_client),
@@ -195,10 +216,14 @@ async def test_run_summary_logging_all_paths(caplog):
         )
 
         with run_context(run_id="run-max-steps"):
-            async for _ in orch_loop.run(messages=[{"role": "user", "content": "loop"}]):
+            async for _ in orch_loop.run(
+                messages=[{"role": "user", "content": "loop"}]
+            ):
                 pass
 
-    summary_records = [r for r in caplog.records if getattr(r, "event", None) == "run_summary"]
+    summary_records = [
+        r for r in caplog.records if getattr(r, "event", None) == "run_summary"
+    ]
     assert len(summary_records) == 3
 
     assert summary_records[0].run_id == "run-success"
@@ -267,7 +292,9 @@ async def test_dashboard_api_client_sends_x_request_id():
     def mock_handler(request: httpx.Request) -> httpx.Response:
         captured_requests.append(request)
         if request.url.path == "/api/metrics":
-            return httpx.Response(200, json=[{"metric_key": "temperature", "unit": "°C"}])
+            return httpx.Response(
+                200, json=[{"metric_key": "temperature", "unit": "°C"}]
+            )
         return httpx.Response(200, json=[])
 
     async with httpx.AsyncClient(

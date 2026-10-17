@@ -63,13 +63,17 @@ async def evaluate_single_case(
     for exp_tool in expected_tools:
         if exp_tool not in executed_tool_names:
             passed = False
-            failure_reasons.append(f"Expected tool '{exp_tool}' was not called. Called: {executed_tool_names}")
+            failure_reasons.append(
+                f"Expected tool '{exp_tool}' was not called. Called: {executed_tool_names}"
+            )
 
     # 2. Sequential count check
     exp_sequential = case.get("sequential_count")
     if exp_sequential and len(tool_calls) < exp_sequential:
         passed = False
-        failure_reasons.append(f"Expected at least {exp_sequential} sequential tool calls, got {len(tool_calls)}.")
+        failure_reasons.append(
+            f"Expected at least {exp_sequential} sequential tool calls, got {len(tool_calls)}."
+        )
 
     # 3. Required parameters check
     required_params = case.get("required_params", {})
@@ -77,12 +81,16 @@ async def evaluate_single_case(
         found = False
         for tc in tool_calls:
             args = tc.get("args", {})
-            if exp_key in args and (exp_val is None or str(args[exp_key]).lower() == str(exp_val).lower()):
+            if exp_key in args and (
+                exp_val is None or str(args[exp_key]).lower() == str(exp_val).lower()
+            ):
                 found = True
                 break
         if not found and expected_tools:
             passed = False
-            failure_reasons.append(f"Required parameter '{exp_key}={exp_val}' not found in tool arguments.")
+            failure_reasons.append(
+                f"Required parameter '{exp_key}={exp_val}' not found in tool arguments."
+            )
 
     # 4. Expected unit in response or tool output
     expected_unit = case.get("expected_unit")
@@ -90,7 +98,9 @@ async def evaluate_single_case(
         # Check if unit is in tool results
         found_in_tool = any(expected_unit in json.dumps(tr) for tr in tool_results)
         if not found_in_tool:
-            failure_reasons.append(f"Expected unit '{expected_unit}' not found in narrative response or tool results.")
+            failure_reasons.append(
+                f"Expected unit '{expected_unit}' not found in narrative response or tool results."
+            )
 
     # 5. Security check: no raw SQL injection
     if case.get("expected_behavior") == "reject_sql" and (
@@ -133,27 +143,43 @@ async def run_eval_suite(
     print("=======================================================\n")
 
     for idx, case in enumerate(dataset, 1):
-        print(f"[{idx:02d}/{len(dataset):02d}] Evaluating {case['id']}: {case['question'][:50]}...", end=" ", flush=True)
+        print(
+            f"[{idx:02d}/{len(dataset):02d}] Evaluating {case['id']}: {case['question'][:50]}...",
+            end=" ",
+            flush=True,
+        )
         eval_res = await evaluate_single_case(case, orch)
         results.append(eval_res)
         if eval_res["passed"]:
             passed_count += 1
-            print(f"✓ PASS (latency: {eval_res['elapsed_seconds']}s, tool_calls: {eval_res['tool_calls_count']})")
+            print(
+                f"✓ PASS (latency: {eval_res['elapsed_seconds']}s, tool_calls: {eval_res['tool_calls_count']})"
+            )
         else:
-            print(f"✗ FAIL (latency: {eval_res['elapsed_seconds']}s, tool_calls: {eval_res['tool_calls_count']})")
+            print(
+                f"✗ FAIL (latency: {eval_res['elapsed_seconds']}s, tool_calls: {eval_res['tool_calls_count']})"
+            )
             for r in eval_res["failure_reasons"]:
                 print(f"       -> {r}")
 
     total = len(dataset)
     accuracy = round((passed_count / total) * 100, 1) if total > 0 else 0.0
 
-    print("\n--------------------------------------------------------------------------------")
+    print(
+        "\n--------------------------------------------------------------------------------"
+    )
     print(f"{'Case ID':<22} | {'Status':<6} | {'Latency':<10} | {'Tool Calls':<10}")
-    print("--------------------------------------------------------------------------------")
+    print(
+        "--------------------------------------------------------------------------------"
+    )
     for r in results:
         status_str = "PASS" if r["passed"] else "FAIL"
-        print(f"{r['id']:<22} | {status_str:<6} | {r['elapsed_seconds']:>7.2f}s | {r['tool_calls_count']:>10}")
-    print("--------------------------------------------------------------------------------")
+        print(
+            f"{r['id']:<22} | {status_str:<6} | {r['elapsed_seconds']:>7.2f}s | {r['tool_calls_count']:>10}"
+        )
+    print(
+        "--------------------------------------------------------------------------------"
+    )
 
     scorecard = {
         "total": total,

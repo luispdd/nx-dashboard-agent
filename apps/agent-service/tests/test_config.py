@@ -140,4 +140,3 @@ def test_settings_preserves_url_when_not_in_docker(tmp_path: Path) -> None:
     cfg = Settings(_env_file=env_file, runtime_config_path=None)
     assert cfg.running_in_docker is False
     assert cfg.llm_base_url == "http://127.0.0.1:8888/v1"
-

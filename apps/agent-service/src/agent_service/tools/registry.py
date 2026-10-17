@@ -74,7 +74,9 @@ async def handle_get_stats(
     params: GetStatsInput,
     client: DashboardApiClient,
 ) -> dict[str, Any]:
-    from_ts, to_ts = resolve_time_range(params.from_ts, params.to_ts, params.range_preset)
+    from_ts, to_ts = resolve_time_range(
+        params.from_ts, params.to_ts, params.range_preset
+    )
     stats_data = await client.get_stats(
         metric=params.metric_key,
         devices=[params.device_id] if params.device_id else None,
@@ -89,7 +91,9 @@ async def handle_get_series(
     params: GetSeriesInput,
     client: DashboardApiClient,
 ) -> dict[str, Any]:
-    from_ts, to_ts = resolve_time_range(params.from_ts, params.to_ts, params.range_preset)
+    from_ts, to_ts = resolve_time_range(
+        params.from_ts, params.to_ts, params.range_preset
+    )
     series_data = await client.get_series(
         metric=params.metric_key,
         devices=params.device_id,
@@ -106,7 +110,9 @@ async def handle_compare_devices(
     params: CompareDevicesInput,
     client: DashboardApiClient,
 ) -> dict[str, Any]:
-    from_ts, to_ts = resolve_time_range(params.from_ts, params.to_ts, params.range_preset)
+    from_ts, to_ts = resolve_time_range(
+        params.from_ts, params.to_ts, params.range_preset
+    )
     # Query stats for all devices
     raw_stats = await client.get_stats(
         metric=params.metric_key,
@@ -119,14 +125,16 @@ async def handle_compare_devices(
     stats_list = raw_stats.get("stats", [])
     device_summaries = []
     for item in stats_list:
-        device_summaries.append({
-            "device_id": item.get("device_id"),
-            "mean": item.get("mean"),
-            "std": item.get("std"),
-            "min": item.get("min"),
-            "max": item.get("max"),
-            "count": item.get("count"),
-        })
+        device_summaries.append(
+            {
+                "device_id": item.get("device_id"),
+                "mean": item.get("mean"),
+                "std": item.get("std"),
+                "min": item.get("min"),
+                "max": item.get("max"),
+                "count": item.get("count"),
+            }
+        )
 
     return {
         "metric": raw_stats.get("metric", params.metric_key),
@@ -141,7 +149,9 @@ async def handle_detect_anomalies(
     params: DetectAnomaliesInput,
     client: DashboardApiClient,
 ) -> dict[str, Any]:
-    from_ts, to_ts = resolve_time_range(params.from_ts, params.to_ts, params.range_preset)
+    from_ts, to_ts = resolve_time_range(
+        params.from_ts, params.to_ts, params.range_preset
+    )
     # Fetch series points for all devices or specific device
     series_resp = await client.get_series(
         metric=params.metric_key,
@@ -192,7 +202,9 @@ class ToolRegistry:
     ) -> dict[str, Any]:
         t0 = time.perf_counter()
 
-        def _finish(status: str, payload: dict[str, Any], raw_args: Any = None) -> dict[str, Any]:
+        def _finish(
+            status: str, payload: dict[str, Any], raw_args: Any = None
+        ) -> dict[str, Any]:
             duration_ms = round((time.perf_counter() - t0) * 1000, 2)
             try:
                 result_bytes = len(json.dumps(payload).encode("utf-8"))

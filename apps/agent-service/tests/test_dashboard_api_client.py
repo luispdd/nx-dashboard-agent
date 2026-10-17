@@ -14,7 +14,9 @@ async def test_get_metrics_success() -> None:
         ]
         return httpx.Response(200, json=data)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         client = DashboardApiClient(client=raw_client)
         metrics = await client.get_metrics()
         assert len(metrics) == 2
@@ -27,7 +29,9 @@ async def test_get_devices_success() -> None:
         assert request.url.path == "/api/devices"
         return httpx.Response(200, json=["esp32c6", "esp32s3", "esp32node1"])
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         client = DashboardApiClient(client=raw_client)
         devices = await client.get_devices()
         assert devices == ["esp32c6", "esp32s3", "esp32node1"]
@@ -60,7 +64,9 @@ async def test_get_stats_parameters() -> None:
         }
         return httpx.Response(200, json=data)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         client = DashboardApiClient(client=raw_client)
         res = await client.get_stats(
             metric="temperature",
@@ -95,7 +101,9 @@ async def test_get_series_parameters() -> None:
         }
         return httpx.Response(200, json=data)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         client = DashboardApiClient(client=raw_client)
         res = await client.get_series(
             metric="humidity",
@@ -112,7 +120,9 @@ async def test_api_error_handling() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(404, json={"message": "Metric not found"})
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         client = DashboardApiClient(client=raw_client)
         with pytest.raises(DashboardApiError) as exc_info:
             await client.get_stats(metric="unknown_metric")

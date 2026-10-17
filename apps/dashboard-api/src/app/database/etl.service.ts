@@ -273,7 +273,7 @@ export class EtlService {
                 typeof row.metrics === 'string'
                   ? JSON.parse(row.metrics)
                   : row.metrics;
-            } catch (err: unknown) {
+            } catch {
               throw new Error(
                 `Malformed JSON in reading id at ${row.timestamp}: ${row.metrics}`
               );

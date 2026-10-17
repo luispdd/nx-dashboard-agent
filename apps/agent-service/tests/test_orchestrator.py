@@ -17,14 +17,23 @@ class MockChoiceDeltaToolCallFunction:
 
 
 class MockChoiceDeltaToolCall:
-    def __init__(self, index: int, id: str | None = None, function: MockChoiceDeltaToolCallFunction | None = None) -> None:
+    def __init__(
+        self,
+        index: int,
+        id: str | None = None,
+        function: MockChoiceDeltaToolCallFunction | None = None,
+    ) -> None:
         self.index = index
         self.id = id
         self.function = function
 
 
 class MockChoiceDelta:
-    def __init__(self, content: str | None = None, tool_calls: list[MockChoiceDeltaToolCall] | None = None) -> None:
+    def __init__(
+        self,
+        content: str | None = None,
+        tool_calls: list[MockChoiceDeltaToolCall] | None = None,
+    ) -> None:
         self.content = content
         self.tool_calls = tool_calls
 
@@ -86,7 +95,11 @@ async def test_sequential_multi_turn_execution() -> None:
             )
         else:
             # Turn 3: Emit final narrative answer tokens
-            yield MockChunk(MockChoiceDelta(content="Average temperature was 21.4°C yesterday and 18.9°C last Tuesday."))
+            yield MockChunk(
+                MockChoiceDelta(
+                    content="Average temperature was 21.4°C yesterday and 18.9°C last Tuesday."
+                )
+            )
             yield MockChunk(MockChoiceDelta(content=" Difference is +2.5°C."))
 
     mock_llm = MagicMock()
@@ -115,7 +128,9 @@ async def test_sequential_multi_turn_execution() -> None:
             },
         )
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         dash_client = DashboardApiClient(client=raw_client)
         registry = build_default_tool_registry()
 
@@ -129,7 +144,12 @@ async def test_sequential_multi_turn_execution() -> None:
 
         events: list[dict[str, Any]] = []
         async for event in orchestrator.run(
-            messages=[{"role": "user", "content": "compare the average temperature deviation between yesterday and last tuesday for esp32c6"}]
+            messages=[
+                {
+                    "role": "user",
+                    "content": "compare the average temperature deviation between yesterday and last tuesday for esp32c6",
+                }
+            ]
         ):
             events.append(event)
 
@@ -175,7 +195,9 @@ async def test_step_limit_guardrail() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=["esp32c6"])
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://test") as raw_client:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://test"
+    ) as raw_client:
         dash_client = DashboardApiClient(client=raw_client)
         registry = build_default_tool_registry()
 
@@ -188,7 +210,9 @@ async def test_step_limit_guardrail() -> None:
         )
 
         events: list[dict[str, Any]] = []
-        async for event in orchestrator.run(messages=[{"role": "user", "content": "loop"}]):
+        async for event in orchestrator.run(
+            messages=[{"role": "user", "content": "loop"}]
+        ):
             events.append(event)
 
         event_types = [e["event"] for e in events]
@@ -196,4 +220,6 @@ async def test_step_limit_guardrail() -> None:
         assert "done" in event_types
 
         error_event = next(e for e in events if e["event"] == "error")
-        assert "Maximum tool calling steps (2) exceeded" in error_event["data"]["message"]
+        assert (
+            "Maximum tool calling steps (2) exceeded" in error_event["data"]["message"]
+        )

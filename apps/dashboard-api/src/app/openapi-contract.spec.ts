@@ -12,7 +12,7 @@ import { HttpExceptionFilter } from './common/http-exception.filter';
 
 describe('OpenAPI Contract Verification', () => {
   let app: NestFastifyApplication;
-  let openApiSpec: Record<string, any>;
+  let openApiSpec: { paths: Record<string, unknown> };
 
   beforeAll(async () => {
     // 1. Verify openapi.json exists and parse it
