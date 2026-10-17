@@ -6,7 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { FastifyReply } from 'fastify';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
 export interface ErrorResponse {
   statusCode: number;
@@ -22,6 +22,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<FastifyReply>();
+    const request =
+      typeof ctx.getRequest === 'function'
+        ? ctx.getRequest<FastifyRequest>()
+        : undefined;
+
+    const requestId =
+      (request?.headers?.['x-request-id'] as string) ||
+      (request as any)?.id;
+    if (requestId && response?.header) {
+      response.header('x-request-id', requestId);
+    }
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let code = 'INTERNAL_SERVER_ERROR';

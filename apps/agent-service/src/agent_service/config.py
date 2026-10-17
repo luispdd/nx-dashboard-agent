@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     dashboard_api_url: str = "http://localhost:3000"
     runtime_config_path: str | None = None
     running_in_docker: bool = False
+    log_payloads: bool = False
 
     def model_post_init(self, context: Any, /) -> None:
         super().model_post_init(context)
@@ -97,6 +98,10 @@ class Settings(BaseSettings):
             )
             if encrypted_key:
                 self.llm_api_key = decrypt_secret(str(encrypted_key))
+
+            log_config = data.get("logging", {})
+            if "log_payloads" in log_config:
+                self.log_payloads = bool(log_config["log_payloads"])
         except Exception as err:  # noqa: BLE001
             logger.warning(
                 "Failed to load runtime configuration from %s: %s", target_path, err

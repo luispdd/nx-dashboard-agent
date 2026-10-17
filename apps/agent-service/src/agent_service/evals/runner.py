@@ -105,6 +105,7 @@ async def evaluate_single_case(
         "question": question,
         "passed": passed,
         "elapsed_seconds": elapsed,
+        "latency_ms": round(elapsed * 1000, 2),
         "tool_calls_count": len(tool_calls),
         "tools_called": executed_tool_names,
         "failure_reasons": failure_reasons,
@@ -137,14 +138,22 @@ async def run_eval_suite(
         results.append(eval_res)
         if eval_res["passed"]:
             passed_count += 1
-            print(f"✓ PASS ({eval_res['elapsed_seconds']}s)")
+            print(f"✓ PASS (latency: {eval_res['elapsed_seconds']}s, tool_calls: {eval_res['tool_calls_count']})")
         else:
-            print(f"✗ FAIL ({eval_res['elapsed_seconds']}s)")
+            print(f"✗ FAIL (latency: {eval_res['elapsed_seconds']}s, tool_calls: {eval_res['tool_calls_count']})")
             for r in eval_res["failure_reasons"]:
                 print(f"       -> {r}")
 
     total = len(dataset)
     accuracy = round((passed_count / total) * 100, 1) if total > 0 else 0.0
+
+    print("\n--------------------------------------------------------------------------------")
+    print(f"{'Case ID':<22} | {'Status':<6} | {'Latency':<10} | {'Tool Calls':<10}")
+    print("--------------------------------------------------------------------------------")
+    for r in results:
+        status_str = "PASS" if r["passed"] else "FAIL"
+        print(f"{r['id']:<22} | {status_str:<6} | {r['elapsed_seconds']:>7.2f}s | {r['tool_calls_count']:>10}")
+    print("--------------------------------------------------------------------------------")
 
     scorecard = {
         "total": total,

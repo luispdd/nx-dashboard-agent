@@ -9,6 +9,11 @@ from sse_starlette.sse import EventSourceResponse
 
 from agent_service.agent.orchestrator import AgentOrchestrator
 from agent_service.clients.dashboard_api import DashboardApiClient
+from agent_service.context import (
+    generate_run_id,
+    reset_current_run_id,
+    set_current_run_id,
+)
 from agent_service.tools.registry import get_tool_registry
 
 logger = logging.getLogger(__name__)
@@ -53,6 +58,8 @@ async def chat_stream(request: Request, body: ChatRequest) -> EventSourceRespons
     dashboard_client = getattr(request.app.state, "dashboard_client", None) or DashboardApiClient()
     tool_registry = getattr(request.app.state, "tool_registry", None) or get_tool_registry()
 
+    run_id = generate_run_id()
+
     orchestrator = AgentOrchestrator(
         llm_client=custom_llm,
         dashboard_client=dashboard_client,
@@ -60,12 +67,14 @@ async def chat_stream(request: Request, body: ChatRequest) -> EventSourceRespons
     )
 
     async def event_generator() -> AsyncIterator[dict[str, str]]:
+        token_run_id = set_current_run_id(run_id)
         messages_dicts = [m.model_dump() for m in body.messages]
         try:
             async for event in orchestrator.run(
                 messages=messages_dicts,
                 user_timezone=body.timezone,
                 context=body.context,
+                run_id=run_id,
             ):
                 yield {
                     "event": event["event"],
@@ -81,5 +90,7 @@ async def chat_stream(request: Request, body: ChatRequest) -> EventSourceRespons
                 "event": "done",
                 "data": json.dumps({}),
             }
+        finally:
+            reset_current_run_id(token_run_id)
 
     return EventSourceResponse(event_generator())

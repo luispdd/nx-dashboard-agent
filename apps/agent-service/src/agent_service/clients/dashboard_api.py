@@ -4,6 +4,7 @@ from typing import Any, Self
 import httpx
 
 from agent_service.config import settings
+from agent_service.context import get_current_run_id
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,13 @@ class DashboardApiClient:
         self._custom_client = client
         self._internal_client: httpx.AsyncClient | None = None
 
+    def _get_headers(self, custom_headers: dict[str, str] | None = None) -> dict[str, str]:
+        headers = dict(custom_headers or {})
+        run_id = get_current_run_id()
+        if run_id:
+            headers["x-request-id"] = run_id
+        return headers
+
     @property
     def client(self) -> httpx.AsyncClient:
         if self._custom_client is not None:
@@ -70,7 +78,7 @@ class DashboardApiClient:
     async def get_metrics(self) -> list[dict[str, str]]:
         """Retrieves metric catalogue with units from GET /api/metrics."""
         try:
-            resp = await self.client.get("/api/metrics")
+            resp = await self.client.get("/api/metrics", headers=self._get_headers())
             resp.raise_for_status()
             data = resp.json()
             if isinstance(data, list):
@@ -84,7 +92,7 @@ class DashboardApiClient:
     async def get_devices(self) -> list[str]:
         """Retrieves list of active device identifiers from GET /api/devices."""
         try:
-            resp = await self.client.get("/api/devices")
+            resp = await self.client.get("/api/devices", headers=self._get_headers())
             resp.raise_for_status()
             data = resp.json()
             if isinstance(data, list):
@@ -115,7 +123,7 @@ class DashboardApiClient:
             params["include_on_demand"] = "true"
 
         try:
-            resp = await self.client.get("/api/stats", params=params)
+            resp = await self.client.get("/api/stats", params=params, headers=self._get_headers())
             resp.raise_for_status()
             return resp.json()
         except httpx.HTTPError as err:
@@ -147,7 +155,7 @@ class DashboardApiClient:
             params["include_on_demand"] = "true"
 
         try:
-            resp = await self.client.get("/api/series", params=params)
+            resp = await self.client.get("/api/series", params=params, headers=self._get_headers())
             resp.raise_for_status()
             return resp.json()
         except httpx.HTTPError as err:

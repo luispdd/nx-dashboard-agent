@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
@@ -8,6 +9,8 @@ from pydantic import BaseModel, ValidationError
 
 from agent_service.analysis.anomalies import TelemetryPoint, detect_all_anomalies
 from agent_service.clients.dashboard_api import DashboardApiClient, DashboardApiError
+from agent_service.config import settings
+from agent_service.context import get_current_run_id, get_current_step
 from agent_service.tools.schemas import (
     CompareDevicesInput,
     DetectAnomaliesInput,
@@ -187,12 +190,54 @@ class ToolRegistry:
         arguments: dict[str, Any] | str,
         client: DashboardApiClient,
     ) -> dict[str, Any]:
+        t0 = time.perf_counter()
+
+        def _finish(status: str, payload: dict[str, Any], raw_args: Any = None) -> dict[str, Any]:
+            duration_ms = round((time.perf_counter() - t0) * 1000, 2)
+            try:
+                result_bytes = len(json.dumps(payload).encode("utf-8"))
+            except Exception:  # noqa: BLE001
+                result_bytes = 0
+
+            log_extra: dict[str, Any] = {
+                "event": "tool_call",
+                "tool": name,
+                "duration_ms": duration_ms,
+                "duration": duration_ms,
+                "status": status,
+                "result_size": result_bytes,
+            }
+            run_id = get_current_run_id()
+            if run_id:
+                log_extra["run_id"] = run_id
+            step = get_current_step()
+            if step is not None:
+                log_extra["step"] = step
+
+            if settings.log_payloads:
+                log_extra["arguments"] = raw_args
+                log_extra["payload"] = payload
+
+            logger.info(
+                "Tool %s executed in %.2fms (status=%s, size=%d bytes)",
+                name,
+                duration_ms,
+                status,
+                result_bytes,
+                extra=log_extra,
+            )
+            return payload
+
         tool = self.get_tool(name)
         if not tool:
-            return {
-                "error": f"Unknown tool '{name}'. Available tools: {list(self._tools.keys())}",
-                "status": "error",
-            }
+            return _finish(
+                "error",
+                {
+                    "error": f"Unknown tool '{name}'. Available tools: {list(self._tools.keys())}",
+                    "status": "error",
+                },
+                raw_args=arguments,
+            )
 
         # Parse string arguments if received as JSON string from LLM
         parsed_args: dict[str, Any]
@@ -200,39 +245,59 @@ class ToolRegistry:
             try:
                 parsed_args = json.loads(arguments) if arguments.strip() else {}
             except json.JSONDecodeError as err:
-                return {
-                    "error": f"Invalid JSON arguments: {err}",
-                    "status": "error",
-                }
+                return _finish(
+                    "error",
+                    {
+                        "error": f"Invalid JSON arguments: {err}",
+                        "status": "error",
+                    },
+                    raw_args=arguments,
+                )
         else:
             parsed_args = arguments
 
         try:
             validated_input = tool.input_model.model_validate(parsed_args)
         except ValidationError as err:
-            return {
-                "error": f"Parameter validation error for tool '{name}': {err}",
-                "status": "error",
-            }
+            return _finish(
+                "error",
+                {
+                    "error": f"Parameter validation error for tool '{name}': {err}",
+                    "status": "error",
+                },
+                raw_args=parsed_args,
+            )
 
         try:
             result = await tool.handler(validated_input, client)
-            return {
-                "status": "success",
-                "result": result,
-            }
+            return _finish(
+                "ok",
+                {
+                    "status": "success",
+                    "result": result,
+                },
+                raw_args=parsed_args,
+            )
         except DashboardApiError as err:
-            return {
-                "error": f"Dashboard API query failed: {err.message}",
-                "status_code": err.status_code,
-                "status": "error",
-            }
+            return _finish(
+                "error",
+                {
+                    "error": f"Dashboard API query failed: {err.message}",
+                    "status_code": err.status_code,
+                    "status": "error",
+                },
+                raw_args=parsed_args,
+            )
         except Exception as err:
             logger.exception("Unexpected error executing tool %s", name)
-            return {
-                "error": f"Internal tool execution error: {err}",
-                "status": "error",
-            }
+            return _finish(
+                "error",
+                {
+                    "error": f"Internal tool execution error: {err}",
+                    "status": "error",
+                },
+                raw_args=parsed_args,
+            )
 
 
 def build_default_tool_registry() -> ToolRegistry:

@@ -58,6 +58,9 @@ async def test_evaluate_single_case_pass() -> None:
     res = await evaluate_single_case(case, mock_orch)
     assert res["passed"] is True
     assert res["tool_calls_count"] == 1
+    assert "elapsed_seconds" in res
+    assert "latency_ms" in res
+    assert res["latency_ms"] >= 0
     assert res["tools_called"] == ["get_stats"]
 
 

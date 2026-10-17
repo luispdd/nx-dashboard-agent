@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from agent_service.api.chat import router as chat_router
 from agent_service.config import Settings, get_settings
+from agent_service.logging_config import setup_logging
 from agent_service.session_manager import SessionManager, get_session_manager
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ class HealthResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    setup_logging()
     logger.info("Starting agent-service application...")
     yield
     logger.info("Shutting down agent-service application...")

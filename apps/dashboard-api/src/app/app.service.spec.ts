@@ -7,6 +7,10 @@ import { SeedService } from './database/seed.service';
 import { BadRequestException } from '@nestjs/common';
 import { Readable } from 'stream';
 
+vi.mock('stream/promises', () => ({
+  pipeline: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('AppService', () => {
   let service: AppService;
   const mockRepo = {
