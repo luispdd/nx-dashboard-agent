@@ -34,18 +34,24 @@ A showcase and proof-of-concept monorepo demonstrating modern full-stack archite
 
 ## Key Architectural Decisions
 
-- **Lean Architecture (ADR-001):** Two backend services only. Zero unnecessary enterprise overhead (no API gateway, gRPC, message brokers, Redis, sagas, outbox, or database-per-service bloat).
-- **Service Specialization (ADR-002):**
+All architectural decisions are documented in [`docs/adr/`](docs/adr/README.md):
+
+- **[Lean Architecture (ADR-018)](docs/adr/ADR-018-two-backend-services-architecture.md):** Two backend services only. Zero unnecessary enterprise overhead (no API gateway, gRPC, message brokers, Redis, sagas, outbox, or database-per-service bloat).
+- **Service Specialization:**
   - **NestJS (TypeScript):** Type-safe REST API, Fastify adapter, OpenAPI contract generation, and query building via Kysely.
   - **FastAPI (Python):** Deterministic mathematical anomaly computation, Pydantic settings, and LLM orchestration via OpenAI-compatible endpoints.
-- **Single Source of Truth (ADR-003):** The agent service never accesses the database directly. It interacts strictly through typed, contract-governed NestJS API endpoints exposed as LLM tools.
-- **Native Federation Micro Frontends (ADR-004):** Angular shell host and React chat remote integrated via browser-native ESM and Import Maps (`@angular-architects/native-federation`). Eliminates legacy Webpack runtime coupling and allows independent framework upgrades.
-- **Read-Only Derived Database & ETL (ADR-005):** Raw source logs (`data/migrations/source.db`) are treated as immutable inputs. The Python ETL pipeline normalizes timestamps, units, and metrics into a query-optimized SQLite database (`data/derived/measurements.db`).
-- **Typed Agent Tools over Free-Form SQL (ADR-006):** Narrow, strongly validated function schemas prevent hallucinations and ensure secure, reliable data access even with smaller local LLMs.
-- **Deterministic Anomaly Statistics (ADR-007):** Statistical metrics (IQR, z-scores, min/max bounds) are computed deterministically in Python. The LLM acts purely as an analytical synthesizer and conversational layer.
-- **Strict UTC Timestamps:** All dates and timestamps are stored and transmitted internally with ISO 8601 UTC `Z` precision (`YYYY-MM-DDTHH:mm:ssZ`). Timestamps are only converted to the viewer's local timezone at the presentation layer.
-- **Modern Angular Standards (ADR-012, ADR-014):** Angular 22 Zoneless (`provideExperimentalZonelessChangeDetection`), Signals-first reactivity (`signal`, `computed`, `input`, `output`), and strict file separation (`.ts`, `.html`, `.scss`).
-- **Unified Unit Testing with Vitest (ADR-013):** Vitest configured across all projects (NestJS, Angular with `vitest-angular`, and React) for fast, native ESM test execution.
+- **[Single Source of Truth (ADR-021)](docs/adr/ADR-021-agent-service-never-touches-database.md):** The agent service never accesses the database directly. It interacts strictly through typed, contract-governed NestJS API endpoints exposed as LLM tools.
+- **[Native Federation Micro Frontends (ADR-004)](docs/adr/ADR-004-native-federation-mfe-spike.md):** Angular shell host and React chat remote integrated via browser-native ESM and Import Maps (`@angular-architects/native-federation`). Eliminates legacy Webpack runtime coupling and allows independent framework upgrades.
+- **[Time-Series Visualizations (ADR-015)](docs/adr/ADR-015-apexcharts-visualization.md):** Modern responsive charts with ApexCharts and `ng-apexcharts`.
+- **[Python Package Management with uv (ADR-016)](docs/adr/ADR-016-python-uv-in-nx-spike.md):** Fast environment and package management via Astral's `uv`.
+- **[Local LLM Connectivity (ADR-017)](docs/adr/ADR-017-local-llm-unsloth-connectivity-spike.md):** Unsloth and Ollama integration for local inference.
+- **[Read-Only Derived Database & ETL (ADR-023)](docs/adr/ADR-023-derived-readonly-database-via-etl.md):** Raw source logs (`data/migrations/source.db`) are treated as immutable inputs. The ETL pipeline normalizes timestamps, units, and metrics into a query-optimized SQLite database (`data/derived/measurements.db`).
+- **[Typed Agent Tools over Free-Form SQL (ADR-019)](docs/adr/ADR-019-typed-narrow-agent-tools.md):** Narrow, strongly validated function schemas prevent hallucinations and ensure secure, reliable data access even with smaller local LLMs.
+- **[Deterministic Anomaly Statistics (ADR-020)](docs/adr/ADR-020-deterministic-anomaly-statistics.md):** Statistical metrics (IQR, z-scores, min/max bounds) are computed deterministically in Python. The LLM acts purely as an analytical synthesizer and conversational layer.
+- **[Strict UTC Timestamps (ADR-024)](docs/adr/ADR-024-utc-iso8601-timestamps.md):** All dates and timestamps are stored and transmitted internally with ISO 8601 UTC `Z` precision (`YYYY-MM-DDTHH:mm:ssZ`). Timestamps are only converted to the viewer's local timezone at the presentation layer.
+- **[OpenAPI as Single Source of Truth (ADR-022)](docs/adr/ADR-022-openapi-contract-first-generated-clients.md):** Zero API drift through contract-first client code generation.
+- **[Stub LLM at E2E Boundary (ADR-025)](docs/adr/ADR-025-stub-llm-at-e2e-boundary.md):** Deterministic, fast CI test runs with full-stack coverage.
+- **[Logs-Only Observability (ADR-026)](docs/adr/ADR-026-logs-only-observability.md):** Structured JSON logging and agent tracing without heavy APM sidecars.
 
 ---
 
