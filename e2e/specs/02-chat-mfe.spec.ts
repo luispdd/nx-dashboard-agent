@@ -1,6 +1,21 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Standalone Chat Microfrontend Suite', () => {
+  test('should show a tool step and stream the final answer (stub LLM only)', async ({ page }) => {
+    test.skip(process.env['E2E_LLM_MODE'] === 'real', 'Scripted tool flow is only deterministic with the stub LLM');
+    await page.goto('http://localhost:4204');
+
+    await page.locator('[data-testid="chat-textarea"]').fill('Which metrics are available?');
+    await page.locator('[data-testid="send-message-btn"]').click();
+
+    await expect(page.locator('[data-testid="tool-steps-container"]')).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('[data-testid^="tool-step-"]').first()).toBeVisible();
+
+    const assistantBubble = page.locator('[data-testid^="assistant-message-"]');
+    await expect(assistantBubble).toContainText('Stub summary', { timeout: 30000 });
+    await expect(page.locator('[data-testid="stop-generation-btn"]')).not.toBeVisible({ timeout: 30000 });
+  });
+
   test('should mount standalone chat assistant UI on port 4204', async ({ page }) => {
     await page.goto('http://localhost:4204');
 

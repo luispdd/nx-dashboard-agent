@@ -145,10 +145,12 @@ nx run-many -t test
 # Run Python unit tests for the agent service
 cd apps/agent-service && uv run pytest
 
-# Run Playwright end-to-end tests
-nx e2e dashboard-shell-e2e
-nx e2e chat-mfe-e2e
+# Run the unified Playwright E2E suite (deterministic LLM stub by default)
+bun run e2e
+# ...or against a real LLM: E2E_LLM_MODE=real bun run e2e
 ```
+
+See [docs/testing-strategy.md](docs/testing-strategy.md) for the test layers and the E2E LLM modes.
 
 ### Linting & Formatting
 
