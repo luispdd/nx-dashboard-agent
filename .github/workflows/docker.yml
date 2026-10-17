@@ -1,0 +1,35 @@
+name: Docker Smoke
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  docker-smoke:
+    name: Container Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare environment configuration
+        run: cp .env.example .env
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Start stack and wait for health checks
+        run: docker compose up -d --wait --wait-timeout 120
+
+      - name: Verify service status
+        run: docker compose ps
+
+      - name: Print container logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Teardown Docker Compose stack
+        if: always()
+        run: docker compose down -v

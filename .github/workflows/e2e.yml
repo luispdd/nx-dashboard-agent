@@ -1,0 +1,88 @@
+name: E2E
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  e2e:
+    name: Playwright E2E Tests (Stub LLM)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for LLM stub availability
+        id: check-stub
+        run: |
+          if [ -f "e2e/fixtures/llm-stub/main.ts" ]; then
+            echo "stub_available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stub_available=false" >> "$GITHUB_OUTPUT"
+            echo "LLM stub fixture not found. Skipping E2E test execution."
+          fi
+
+      - name: Setup Node.js
+        if: steps.check-stub.outputs.stub_available == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Bun
+        if: steps.check-stub.outputs.stub_available == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup uv
+        if: steps.check-stub.outputs.stub_available == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: '3.13'
+
+      - name: Cache Bun dependencies
+        if: steps.check-stub.outputs.stub_available == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install JavaScript dependencies
+        if: steps.check-stub.outputs.stub_available == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Install Python dependencies
+        if: steps.check-stub.outputs.stub_available == 'true'
+        run: |
+          cd apps/agent-service
+          uv sync
+
+      - name: Add node_modules bin to PATH
+        if: steps.check-stub.outputs.stub_available == 'true'
+        run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> $GITHUB_PATH
+
+      - name: Install Playwright Chromium browser and OS dependencies
+        if: steps.check-stub.outputs.stub_available == 'true'
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E tests against live stack with LLM stub
+        if: steps.check-stub.outputs.stub_available == 'true'
+        env:
+          E2E_LLM_MODE: stub
+          E2E_LLM_STUB_PORT: 8890
+        run: bun run e2e
+
+      - name: Upload Playwright HTML Report
+        uses: actions/upload-artifact@v4
+        if: always() && steps.check-stub.outputs.stub_available == 'true'
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

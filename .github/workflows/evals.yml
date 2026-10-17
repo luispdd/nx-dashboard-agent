@@ -1,0 +1,41 @@
+name: Agent Evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      llm_base_url:
+        description: 'LLM Base URL (defaults to repository var/secret LLM_BASE_URL)'
+        required: false
+        type: string
+      llm_model:
+        description: 'LLM Model (defaults to repository var/secret LLM_MODEL)'
+        required: false
+        type: string
+
+jobs:
+  eval:
+    name: Run Agent Evals
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: '3.13'
+
+      - name: Install Python dependencies
+        run: |
+          cd apps/agent-service
+          uv sync
+
+      - name: Run agent evaluation suite
+        env:
+          LLM_BASE_URL: ${{ inputs.llm_base_url || vars.LLM_BASE_URL || secrets.LLM_BASE_URL || 'http://127.0.0.1:8888/v1' }}
+          LLM_MODEL: ${{ inputs.llm_model || vars.LLM_MODEL || secrets.LLM_MODEL || 'unsloth/Qwen3.5-4B-GGUF' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          cd apps/agent-service
+          uv run python -m agent_service.evals.runner
