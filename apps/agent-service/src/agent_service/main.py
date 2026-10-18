@@ -41,14 +41,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     dash_client = getattr(app.state, "dashboard_client", None)
     if dash_client and hasattr(dash_client, "close"):
         await dash_client.close()
+    mcp_client = getattr(app.state, "mcp_client", None)
+    if mcp_client and hasattr(mcp_client, "close"):
+        await mcp_client.close()
 
 
 def create_app(
     custom_settings: Settings | None = None,
     session_manager: SessionManager | None = None,
     llm_client: Any | None = None,
-    dashboard_client: Any | None = None,
+    mcp_client: Any | None = None,
     tool_registry: Any | None = None,
+    dashboard_client: Any | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="Agent Service",
@@ -60,6 +64,7 @@ def create_app(
     app.state.session_manager = session_manager or get_session_manager()
     app.state.settings = custom_settings
     app.state.llm_client = llm_client
+    app.state.mcp_client = mcp_client
     app.state.dashboard_client = dashboard_client
     app.state.tool_registry = tool_registry
 

@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from fastapi.testclient import TestClient
 
+from agent_service.clients.mcp_client import DiscoveredToolsResult, McpClient
 from agent_service.main import create_app
 
 
@@ -41,7 +42,12 @@ def test_chat_endpoint_streaming_success() -> None:
     mock_llm = MagicMock()
     mock_llm.chat.completions.create = AsyncMock(side_effect=mock_create)
 
-    app = create_app(llm_client=mock_llm)
+    mock_mcp = AsyncMock(spec=McpClient)
+    mock_mcp.list_tools = AsyncMock(
+        return_value=DiscoveredToolsResult(tools=[], instructions=None)
+    )
+
+    app = create_app(llm_client=mock_llm, mcp_client=mock_mcp)
 
     with TestClient(app) as client:
         resp = client.post(
@@ -59,4 +65,27 @@ def test_chat_endpoint_streaming_success() -> None:
         assert "event: token" in body
         assert "Hello from " in body
         assert "the agent!" in body
+        assert "event: done" in body
+
+
+def test_chat_endpoint_mcp_outage() -> None:
+    mock_llm = MagicMock()
+    app = create_app(
+        llm_client=mock_llm,
+        mcp_client=McpClient(url="http://127.0.0.1:9999/mcp", timeout=0.1),
+    )
+
+    with TestClient(app) as client:
+        resp = client.post(
+            "/api/chat",
+            json={
+                "messages": [{"role": "user", "content": "Hello"}],
+                "timezone": "Europe/Madrid",
+            },
+        )
+        assert resp.status_code == 200
+        assert "text/event-stream" in resp.headers["content-type"]
+        body = resp.text
+        assert "event: error" in body
+        assert "Server streaming error" in body
         assert "event: done" in body

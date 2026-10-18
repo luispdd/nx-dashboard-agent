@@ -66,9 +66,7 @@ async def test_llm_call_logging(caplog):
         async for _ in orchestrator.run(messages=[{"role": "user", "content": "hi"}]):
             pass
 
-    records = [
-        r for r in caplog.records if getattr(r, "event", None) == "llm_call"
-    ]
+    records = [r for r in caplog.records if getattr(r, "event", None) == "llm_call"]
     assert len(records) == 1
     rec = records[0]
     assert rec.model == "test-obs-model"

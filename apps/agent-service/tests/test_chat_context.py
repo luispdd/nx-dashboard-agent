@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from agent_service.agent.prompt import build_system_prompt
 from agent_service.api.chat import DashboardContextModel, TimeRangeContext
+from agent_service.clients.mcp_client import DiscoveredToolsResult, McpClient
 from agent_service.main import create_app
 
 
@@ -82,7 +83,12 @@ def test_chat_endpoint_with_context_payload() -> None:
     mock_llm = MagicMock()
     mock_llm.chat.completions.create = AsyncMock(side_effect=mock_create)
 
-    app = create_app(llm_client=mock_llm)
+    mock_mcp = AsyncMock(spec=McpClient)
+    mock_mcp.list_tools = AsyncMock(
+        return_value=DiscoveredToolsResult(tools=[], instructions=None)
+    )
+
+    app = create_app(llm_client=mock_llm, mcp_client=mock_mcp)
 
     with TestClient(app) as client:
         resp = client.post(
