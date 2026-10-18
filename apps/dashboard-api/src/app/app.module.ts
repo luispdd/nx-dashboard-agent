@@ -8,6 +8,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { DevicesModule } from './devices/devices.module';
 import { SeriesModule } from './series/series.module';
 import { StatsModule } from './stats/stats.module';
+import { McpModule } from './mcp/mcp.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { StatsModule } from './stats/stats.module';
     DevicesModule,
     SeriesModule,
     StatsModule,
+    McpModule,
   ],
   controllers: [AppController],
   providers: [

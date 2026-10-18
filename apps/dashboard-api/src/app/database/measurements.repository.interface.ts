@@ -46,12 +46,18 @@ export interface DatabaseStatus {
   lastImportedAt: string | null;
 }
 
+export interface TimeBounds {
+  earliest: string | null;
+  latest: string | null;
+}
+
 export interface MeasurementsRepository {
   getMetrics(): Promise<MetricCatalogItem[]>;
   getDevices(): Promise<string[]>;
   getSeries(options: SeriesQueryOptions): Promise<SeriesPointRow[]>;
   getStats(options: StatsQueryOptions): Promise<StatsRow[]>;
   getDatabaseStatus(): Promise<DatabaseStatus>;
+  getTimeBounds(): Promise<TimeBounds>;
   reconnect?(): Promise<void> | void;
 }
 

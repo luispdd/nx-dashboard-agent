@@ -32,6 +32,10 @@ export class AppService {
     return await this.repo.getDatabaseStatus();
   }
 
+  async getTimeBounds(): Promise<{ earliest: string | null; latest: string | null }> {
+    return await this.repo.getTimeBounds();
+  }
+
   async importDatabase(
     fileStream: Readable,
     filename: string

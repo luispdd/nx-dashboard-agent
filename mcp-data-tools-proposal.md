@@ -1,11 +1,30 @@
 # Proposal: Dashboard MCP data tools and generic agent tool discovery
 
-Brief for the coding agent. Use it as the input for `openspec-explore` / `openspec-propose`. It defines **two OpenSpec changes**, to be created and implemented in order:
+Brief for the coding agent. Use it as the input for `openspec-explore` / `openspec-propose`. It defines a throwaway feasibility spike (section 0, run first, no OpenSpec change) and **two OpenSpec changes**, to be created and implemented in order after the spike:
 
 1. `mcp-data-tools-server` (project: `dashboard-api`)
 2. `agent-mcp-client` (project: `agent-service`, depends on change 1)
 
 Follow `AGENTS.md` and the skills in `.agents/skills/` throughout. In particular: research the exact installed versions of every third-party library before using it (core rule in `AGENTS.md`), use `nx` directly with `bun` for packages and `uv` for Python, keep timestamps UTC with `Z`, and do not implement anything beyond what the active change's spec says.
+
+---
+
+## 0. Spike 0: feasibility (run before change 1, throwaway)
+
+Timeboxed (about 5 hours) and discardable. Work on a scratch branch or git-ignored folder. Do not modify the workspace `package.json` or `pyproject.toml` (use a scratch Nest app, or `uv run --with mcp` for Python). Output is `spike-findings.md`, not code to keep. Its results may amend sections 4 to 6 (library, cap value, schema rules).
+
+| # | Uncertainty | Minimum experiment | Pass criterion |
+|---|---|---|---|
+| A | MCP library works on NestJS 11 + Fastify 5 | Add `@rekog/mcp-nest` and `zod`, expose a dummy tool `ping(echo)` at `POST /api/mcp`. If it fails, mount `@modelcontextprotocol/sdk` stateless Streamable HTTP on the Fastify instance. | A client (`bunx @modelcontextprotocol/inspector` or the Python SDK) completes initialize, `tools/list`, `tools/call`. Record library and versions. |
+| B | Global `ValidationPipe`, `HttpExceptionFilter` and `api` prefix do not interfere | Run A inside the real `main.ts` configuration. | Tool errors arrive as `isError: true`; the OpenAPI export has no MCP route. |
+| C | Stateless mode, version negotiation, `instructions`, `structuredContent` | Call without a session id; inspect the negotiated protocol revision and returned fields. | Repeated sessionless calls succeed. Record the revision and supported features. |
+| D | Python SDK client works, and schemas are accepted by the local LLM | Scratch script: connect, list tools, convert one schema to an OpenAI function, send it to the configured LLM. | The model calls the tool with valid arguments. Record schema keywords that must be stripped. |
+| E | Anomaly detection is feasible under the point cap | With the seeded DB and the real series service, request 30 days of one metric at 5-minute data; count windows at cap 500; run the existing detector on windowed versus REST data. | 20 windows or fewer (or tune the cap / add `max_points`), and the same injected anomalies are flagged. |
+| F | Tool-list size does not hurt the small local model | Run 5 to 8 eval questions with MCP-style versus current REST tool schemas. | Tool-call accuracy equal within noise. Quick signal only, not the full eval. |
+
+Order: A, B, C (about 2 h, shared setup), then D and E (about 1 h each, independent), then F (about 30 min, needs D). If A fails with both libraries, stop and revisit this proposal.
+
+`spike-findings.md` must record: chosen library and versions, negotiated spec revision, `instructions` / `structuredContent` support, any pipe/filter workaround, schema keywords to strip, window count and detector parity from E, and a go/no-go with proposed edits to this document.
 
 ---
 

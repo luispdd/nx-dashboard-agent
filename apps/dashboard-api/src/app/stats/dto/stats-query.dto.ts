@@ -8,6 +8,12 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
+import {
+  DEFAULT_INCLUDE_ON_DEMAND,
+  ISO_UTC_MESSAGE,
+  ISO_UTC_REGEX,
+} from '../../common/domain-constants';
+
 export class StatsQueryDto {
   @ApiProperty({
     description: 'Metric key identifier (e.g. temperature, humidity, pressure)',
@@ -39,8 +45,8 @@ export class StatsQueryDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/, {
-    message: 'from must be an ISO-8601 UTC timestamp ending in Z',
+  @Matches(ISO_UTC_REGEX, {
+    message: ISO_UTC_MESSAGE,
   })
   from?: string;
 
@@ -50,19 +56,19 @@ export class StatsQueryDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/, {
-    message: 'to must be an ISO-8601 UTC timestamp ending in Z',
+  @Matches(ISO_UTC_REGEX, {
+    message: ISO_UTC_MESSAGE,
   })
   to?: string;
 
   @ApiPropertyOptional({
     description: 'Include on-demand manual readings in aggregate (default false)',
-    default: false,
+    default: DEFAULT_INCLUDE_ON_DEMAND,
   })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
-  include_on_demand?: boolean = false;
+  include_on_demand?: boolean = DEFAULT_INCLUDE_ON_DEMAND;
 }
 
 export class StatsItemDto {

@@ -11,6 +11,7 @@ import {
   SeriesQueryOptions,
   StatsQueryOptions,
   StatsRow,
+  TimeBounds,
 } from './measurements.repository.interface';
 import { getDatabaseConfig } from './database.config';
 import { autoBootstrapDatabase } from './database-bootstrap';
@@ -311,6 +312,28 @@ export class KyselyMeasurementsRepository
         readingCount: Number(countRes?.count || 0),
         deviceCount: deviceRows.length,
         lastImportedAt: null,
+      };
+    }
+  }
+
+  async getTimeBounds(): Promise<TimeBounds> {
+    try {
+      const row = await this.db
+        .selectFrom('measurements')
+        .select([
+          sql<string | null>`min(ts)`.as('earliest'),
+          sql<string | null>`max(ts)`.as('latest'),
+        ])
+        .executeTakeFirst();
+
+      return {
+        earliest: row?.earliest || null,
+        latest: row?.latest || null,
+      };
+    } catch {
+      return {
+        earliest: null,
+        latest: null,
       };
     }
   }

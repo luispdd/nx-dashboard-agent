@@ -11,23 +11,17 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
-export type BucketInterval = '5m' | '15m' | '1h' | '6h' | '1d';
+import {
+  BUCKET_INTERVALS,
+  BucketInterval,
+  DEFAULT_BUCKET_INTERVAL,
+  DEFAULT_INCLUDE_ON_DEMAND,
+  ISO_UTC_MESSAGE,
+  ISO_UTC_REGEX,
+  bucketToSeconds,
+} from '../../common/domain-constants';
 
-export function bucketToSeconds(bucket?: BucketInterval): number {
-  switch (bucket) {
-    case '15m':
-      return 15 * 60;
-    case '1h':
-      return 60 * 60;
-    case '6h':
-      return 6 * 60 * 60;
-    case '1d':
-      return 24 * 60 * 60;
-    case '5m':
-    default:
-      return 5 * 60;
-  }
-}
+export { BucketInterval, bucketToSeconds };
 
 export class SeriesQueryDto {
   @ApiProperty({
@@ -60,8 +54,8 @@ export class SeriesQueryDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/, {
-    message: 'from must be an ISO-8601 UTC timestamp ending in Z',
+  @Matches(ISO_UTC_REGEX, {
+    message: ISO_UTC_MESSAGE,
   })
   from?: string;
 
@@ -71,28 +65,28 @@ export class SeriesQueryDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/, {
-    message: 'to must be an ISO-8601 UTC timestamp ending in Z',
+  @Matches(ISO_UTC_REGEX, {
+    message: ISO_UTC_MESSAGE,
   })
   to?: string;
 
   @ApiPropertyOptional({
     description: 'Downsampling bucket interval (5m, 15m, 1h, 6h, 1d)',
-    enum: ['5m', '15m', '1h', '6h', '1d'],
-    default: '5m',
+    enum: BUCKET_INTERVALS,
+    default: DEFAULT_BUCKET_INTERVAL,
   })
   @IsOptional()
-  @IsIn(['5m', '15m', '1h', '6h', '1d'])
-  bucket?: BucketInterval = '5m';
+  @IsIn(BUCKET_INTERVALS)
+  bucket?: BucketInterval = DEFAULT_BUCKET_INTERVAL;
 
   @ApiPropertyOptional({
     description: 'Include on-demand manual readings in aggregate (default false)',
-    default: false,
+    default: DEFAULT_INCLUDE_ON_DEMAND,
   })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
-  include_on_demand?: boolean = false;
+  include_on_demand?: boolean = DEFAULT_INCLUDE_ON_DEMAND;
 
   @ApiPropertyOptional({
     description: 'Limit output to the latest N data points per device',

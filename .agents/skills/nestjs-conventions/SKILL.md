@@ -37,14 +37,26 @@ Commands go through `bunx nx ...` / `bun`. Use the workspace's installed NestJS 
 - Use one consistent error format via an exception filter (status, code, message, details). Do not leak internals or stack traces.
 - Version the API path or document the policy when contracts start to change.
 
+## MCP Module & Telemetry Server (ADR-0014)
+
+- In-process read-only MCP server lives in `src/app/mcp/` mounted at `POST /api/mcp` via `@modelcontextprotocol/sdk` and `StreamableHTTPServerTransport` in stateless mode.
+- **Fastify Stream Hijacking**: Fastify controls response lifecycle by default. Call `reply.hijack()` before passing Node raw streams (`req.raw`, `reply.raw`) to `transport.handleRequest()`.
+- Non-POST HTTP methods on `/api/mcp` return explicit `405 Method Not Allowed`.
+- **Thin Adapters**: MCP tools must only inject and delegate to domain services (`MetricsService`, `DevicesService`, `SeriesService`, `StatsService`, `AppService`). They must NEVER import repositories, Kysely, or database connections directly.
+- **Swagger Exclusion**: Decorate `McpController` with `@ApiExcludeController()` so the MCP route is excluded from OpenAPI exports and generated frontend contracts remain clean.
+- **Shared Constants**: Use `src/app/common/domain-constants.ts` across both REST DTOs and MCP Zod schemas for parity on buckets, range presets, and limits.
+
 ## Testing & Quality
 
 - Strict TypeScript; no `any` without justification.
 - **Unit / Integration Tests**: **Vitest** runner. Requires `import 'reflect-metadata';` in the test setup file.
+- **MCP Architectural Boundary Test**: Enforce zero direct persistence imports in `src/app/mcp/`.
+- **Parity Tests**: Verify equivalent parameters return identical payloads across REST endpoints and MCP tools on seeded databases.
+- **Core Contract Test**: Verify conformance against `docs/contracts/mcp-core-contract.json`.
 - **E2E Tests**: **Playwright** (`apps/dashboard-api/e2e`) against running Fastify test instance.
 - Structured logging; no secrets in logs; request ids if cheap to add.
 - Health endpoint for Docker health checks.
-- No authentication scope in this POC; do not add it without a spec.
+- Optional MCP token guard (`MCP_AUTH_TOKEN`) and origin guard (`MCP_ALLOWED_ORIGINS`).
 
 ## Checklist
 

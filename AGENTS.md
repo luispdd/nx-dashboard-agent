@@ -21,10 +21,10 @@ IoT dashboard + data agent: a proof of concept demonstrating full-stack IoT tele
 
 - Two backend services only. **No** API gateway, gRPC, message broker, Redis, sagas, outbox or database-per-service.
 - **No** free-form SQL tool for the agent. Typed, narrow tools only.
-- The agent service never opens the database directly; it calls the NestJS API.
+- The agent service never opens the database directly; it calls the NestJS API (or its in-process MCP server `/api/mcp` for telemetry tools).
 - Anomaly statistics are computed deterministically in Python; the LLM only interprets results.
 - The LLM provider is configuration (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`), never hardcoded. Resolved from runtime config (`data/runtime-config.json`) when present, falling back to `.env` or defaults.
-- OpenAPI specs are the contract between services; clients are generated, never hand-written.
+- OpenAPI specs are the contract between services; clients are generated, never hand-written. The read-only MCP endpoint (`POST /api/mcp`) is internal server-to-server and explicitly excluded from OpenAPI.
 - **Microfrontends:** Angular host (`dashboard-shell`) + React remote (`chat-mfe`) via Native Federation (browser ESM and Import Maps).
 - **Styling:** Tailwind CSS + SCSS across all microfrontends.
 - **Angular Architecture:** Angular 22, Zoneless (`provideExperimentalZonelessChangeDetection`), Signals-first (`signal`, `computed`, `input`, `output`), and independent files for component (`.ts`), template (`.html`), and styles (`.scss`) with no inline templates or styles.
@@ -73,6 +73,7 @@ cd apps/agent-service && uv run ruff check .        # run Python linter
 5. **No secrets in the repository or in Docker images.** Configuration comes from environment variables or `data/runtime-config.json` (git-ignored); commit only `.env.example`.
 6. **Do not implement beyond the active OpenSpec change.** If something is missing from the spec, update the spec or ask.
 7. **No private data in the repo.** Use the synthetic seed generator for fixtures and demos.
+8. **No absolute host or user file paths.** Never write, commit, or link machine-specific absolute paths (`/home/...`, `file:///...`) in docs, ADRs, or OpenSpec changes. Always use repo-relative paths or relative markdown links.
 
 ## Definition of done
 

@@ -6,12 +6,12 @@ While all Nx lint targets currently pass, a full audit of workspace linters reve
 
 ## What Changes
 
-- **Root ESLint Configuration**: Add `**/src/generated/**` and `libs/shared/contracts/src/generated/**` to global ignores in [eslint.config.mjs](file:///home/fuchik0ma/code/nx-dashboard-agent/eslint.config.mjs) so root-level lint commands do not flag generated OpenAPI artifacts.
-- **Unused Variables Cleanup**: Remove unused imports (`HttpException`, `MEASUREMENTS_REPOSITORY`, `screen`) and prefix unused catch variables (such as `_err` in [etl.service.ts](file:///home/fuchik0ma/code/nx-dashboard-agent/apps/dashboard-api/src/app/database/etl.service.ts)) across `dashboard-api` and `chat-mfe`.
-- **Type Narrowing**: Replace arbitrary `any` annotations with `unknown` or concrete types in [http-exception.filter.ts](file:///home/fuchik0ma/code/nx-dashboard-agent/apps/dashboard-api/src/app/common/http-exception.filter.ts), [request-logging.interceptor.ts](file:///home/fuchik0ma/code/nx-dashboard-agent/apps/dashboard-api/src/app/common/request-logging.interceptor.ts), [use-chat-stream.ts](file:///home/fuchik0ma/code/nx-dashboard-agent/apps/chat-mfe/src/app/hooks/use-chat-stream.ts), and test fixtures.
-- **React Hook Dependencies**: Explicitly handle or memoize dependencies in [apps/chat-mfe/src/app/app.tsx](file:///home/fuchik0ma/code/nx-dashboard-agent/apps/chat-mfe/src/app/app.tsx) to satisfy `react-hooks/exhaustive-deps`.
-- **E2E Non-Null Assertions**: Safely extract regex matches or use expect matchers in [e2e/specs/04-fullstack-agent-integration.spec.ts](file:///home/fuchik0ma/code/nx-dashboard-agent/e2e/specs/04-fullstack-agent-integration.spec.ts) to eliminate `@typescript-eslint/no-non-null-assertion` warnings.
-- **Python Code Formatting**: Apply `ruff format .` across [apps/agent-service](file:///home/fuchik0ma/code/nx-dashboard-agent/apps/agent-service) so both `ruff check .` and `ruff format --check .` pass cleanly.
+- **Root ESLint Configuration**: Add `**/src/generated/**` and `libs/shared/contracts/src/generated/**` to global ignores in `eslint.config.mjs` so root-level lint commands do not flag generated OpenAPI artifacts.
+- **Unused Variables Cleanup**: Remove unused imports (`HttpException`, `MEASUREMENTS_REPOSITORY`, `screen`) and prefix unused catch variables (such as `_err` in `apps/dashboard-api/src/app/database/etl.service.ts`) across `dashboard-api` and `chat-mfe`.
+- **Type Narrowing**: Replace arbitrary `any` annotations with `unknown` or concrete types in `apps/dashboard-api/src/app/common/http-exception.filter.ts`, `apps/dashboard-api/src/app/common/request-logging.interceptor.ts`, `apps/chat-mfe/src/app/hooks/use-chat-stream.ts`, and test fixtures.
+- **React Hook Dependencies**: Explicitly handle or memoize dependencies in `apps/chat-mfe/src/app/app.tsx` to satisfy `react-hooks/exhaustive-deps`.
+- **E2E Non-Null Assertions**: Safely extract regex matches or use expect matchers in `e2e/specs/04-fullstack-agent-integration.spec.ts` to eliminate `@typescript-eslint/no-non-null-assertion` warnings.
+- **Python Code Formatting**: Apply `ruff format .` across `apps/agent-service` so both `ruff check .` and `ruff format --check .` pass cleanly.
 
 ## Non-goals
 
