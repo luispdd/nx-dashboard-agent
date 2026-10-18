@@ -62,6 +62,7 @@ __pycache__/
 *.db-shm
 *.sqlite
 *.sqlite3
+!e2e/fixtures/*.sqlite
 data/migrations/*.db
 data/derived/*.db
 data/runtime-config.json

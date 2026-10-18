@@ -12,10 +12,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare environment configuration
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          echo "UID=$(id -u)" >> $GITHUB_ENV
+          echo "GID=$(id -g)" >> $GITHUB_ENV
+          echo "UID=$(id -u)" >> .env
+          echo "GID=$(id -g)" >> .env
+          chmod -R 777 data
 
       - name: Build Docker images
         run: docker compose build

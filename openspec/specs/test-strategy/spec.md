@@ -30,3 +30,10 @@ E2E tests SHALL NOT assert hardcoded record counts or exact measurement values.
 #### Scenario: Structural assertions only
 - **WHEN** an E2E test checks tables or charts
 - **THEN** it SHALL assert structure and populated state rather than specific data values
+
+### Requirement: E2E Test Fixtures Tracking
+The repository SHALL track and version-control synthetic test fixtures (including sample SQLite databases) required by end-to-end test suites under `e2e/fixtures/` and exempt them from workspace-level database ignore rules.
+
+#### Scenario: Tracking synthetic test databases
+- **WHEN** an E2E test requires an input database fixture (e.g. Settings database upload)
+- **THEN** the fixture file SHALL be committed under `e2e/fixtures/` with a gitignore exception (`!e2e/fixtures/*.sqlite`) rather than ignored or dynamically fetched

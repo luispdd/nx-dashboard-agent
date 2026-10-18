@@ -47,6 +47,14 @@ The system SHALL provide a `docker-compose.yml` configuration that coordinates s
 - **WHEN** services launch in Docker Compose
 - **THEN** `dashboard-api` and `agent-service` SHALL pass HTTP health checks before `web-host` accepts incoming frontend traffic
 
+#### Scenario: Volume mount ownership and non-root execution
+- **WHEN** `dashboard-api` runs with host-mounted `./data/migrations` and `./data/derived`
+- **THEN** it SHALL support configurable `UID` and `GID` user mapping to preserve file ownership and prevent permission errors on Linux hosts and CI runners
+
+#### Scenario: IPv4 loopback health verification
+- **WHEN** container health checks execute inside the container network
+- **THEN** HTTP probes SHALL query IPv4 loopback (`127.0.0.1`) directly to avoid IPv6 connection refusal
+
 ### Requirement: Host-local LLM gateway resolution
 The `agent-service` container SHALL support connecting to local LLM inference engines (such as Unsloth or Ollama) running on the host machine.
 

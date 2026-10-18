@@ -25,7 +25,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "const r = require('http').get('http://localhost:3000/api/database/status', (res) => process.exit(res.statusCode === 200 ? 0 : 1)); r.on('error', () => process.exit(1));",
+          "const r = require('http').get('http://127.0.0.1:3000/api/database/status', (res) => process.exit(res.statusCode === 200 ? 0 : 1)); r.on('error', () => process.exit(1));",
         ]
       interval: 5s
       timeout: 5s

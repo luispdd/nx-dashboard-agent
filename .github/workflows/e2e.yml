@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check for LLM stub availability
         id: check-stub
@@ -28,7 +28,7 @@ jobs:
 
       - name: Setup Node.js
         if: steps.check-stub.outputs.stub_available == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -47,7 +47,7 @@ jobs:
 
       - name: Cache Bun dependencies
         if: steps.check-stub.outputs.stub_available == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
@@ -80,7 +80,7 @@ jobs:
         run: bun run e2e
 
       - name: Upload Playwright HTML Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always() && steps.check-stub.outputs.stub_available == 'true'
         with:
           name: playwright-report
