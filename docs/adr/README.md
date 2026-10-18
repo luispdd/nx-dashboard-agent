@@ -8,6 +8,7 @@ This directory documents the significant architectural decisions made during the
 | :--- | :--- | :--- | :--- |
 | [ADR-004](ADR-004-native-federation-mfe-spike.md) | Microfrontend Architecture — Native Federation for Angular Host and React Remote | Accepted | Frontend / Microfrontends |
 | [ADR-0014](0014-dashboard-mcp-server.md) | In-Process Dashboard MCP Server for Telemetry Tools | Accepted | Dashboard API / MCP |
+| [ADR-0015](0015-agent-mcp-tool-discovery.md) | Agent Dynamic MCP Tool Discovery and Anomaly Detection Decoupling | Accepted | Agent Service / MCP |
 | [ADR-015](ADR-015-apexcharts-visualization.md) | Time-Series Data Visualization with ApexCharts | Accepted | Dashboard Shell / Charts |
 | [ADR-016](ADR-016-python-uv-in-nx-spike.md) | Python Fast Package & Environment Management with uv in Nx Monorepo | Accepted | Workspace / Tooling |
 | [ADR-017](ADR-017-local-llm-unsloth-connectivity-spike.md) | Local LLM Connectivity — Unsloth & Ollama Integration | Accepted | AI / Local LLM |

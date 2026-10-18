@@ -1,5 +1,19 @@
 """External clients package."""
 
-from agent_service.clients.dashboard_api import DashboardApiClient, DashboardApiError
+from agent_service.clients.mcp_client import (
+    DiscoveredToolsResult,
+    McpClient,
+    McpClientError,
+    McpConnectionError,
+    McpTimeoutError,
+    McpToolResult,
+)
 
-__all__ = ["DashboardApiClient", "DashboardApiError"]
+__all__ = [
+    "DiscoveredToolsResult",
+    "McpClient",
+    "McpClientError",
+    "McpConnectionError",
+    "McpTimeoutError",
+    "McpToolResult",
+]

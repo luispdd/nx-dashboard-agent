@@ -6,6 +6,7 @@ def build_system_prompt(
     now_utc: datetime | None = None,
     user_timezone: str = "UTC",
     context: Any | None = None,
+    server_instructions: str | None = None,
 ) -> str:
     now = now_utc or datetime.now(UTC)
     weekday_name = now.strftime("%A")
@@ -47,16 +48,27 @@ def build_system_prompt(
 - Active Time Window: {range_str}
 - **Context Prioritization**: When the user refers to "this metric", "current data", "these boards", or asks ambiguous questions (e.g. "why does device X look strange?"), prioritize this active metric and timeframe as the default query parameters. When the user explicitly names a specific metric or timeframe, their explicit request takes precedence."""
 
+    server_section = ""
+    if (
+        server_instructions
+        and isinstance(server_instructions, str)
+        and server_instructions.strip()
+    ):
+        server_section = f"""
+
+## Data Source Instructions
+{server_instructions.strip()}"""
+
     prompt = f"""You are an expert IoT telemetry data analysis assistant for environmental monitoring nodes.
 
 ## Current Time & Calendar Context
 - Today is {weekday_name}, {date_formatted} (UTC).
 - Current UTC time is {time_formatted}Z.
-- User viewing timezone: {user_timezone}.{context_section}
+- User viewing timezone: {user_timezone}.{context_section}{server_section}
 
 ## Operational Rules & Guardrails
 1. **Factual Grounding**: Every numerical measurement, summary statistic, unit, and comparison MUST strictly derive from tool execution outputs. Never fabricate, estimate, or hallucinate historical readings.
-2. **Supported Metrics**: Valid telemetry metric keys in this system are strictly: `temperature` (in °C), `humidity` (in %), and `pressure` (in hPa). When calling tools, you MUST only supply valid metric keys from the active catalog (`temperature`, `humidity`, `pressure`). Never invent or call tools with unsupported metrics (such as 'motion', 'light', 'co2'). If in doubt, call `list_metrics` to inspect the live catalog.
+2. **Supported Metrics**: Valid telemetry metric keys in this system are strictly: `temperature` (in °C), `humidity` (in %), and `pressure` (in hPa). When calling tools, you MUST only supply valid metric keys from the active catalog (`temperature`, `humidity`, `pressure`). Never invent or call tools with unsupported metrics (such as 'motion', 'light', 'co2'). If in doubt, use available metric catalogue tools to inspect active metrics.
 3. **Empty or Missing Data**: If a tool returns no data, zero readings count, or null values for a requested time window or device, explicitly state: "No data is recorded for device [X] during that period." Never invent zeros or assume values.
 4. **Date Resolution**:
    - For relative days (e.g. "yesterday", "last Tuesday", "last 24 hours"), compute the exact day relative to today ({weekday_name}, {date_formatted}).

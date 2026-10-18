@@ -7,7 +7,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from agent_service.agent.prompt import build_system_prompt
-from agent_service.clients.dashboard_api import DashboardApiClient
+from agent_service.clients.mcp_client import McpClient
 from agent_service.config import settings
 from agent_service.context import (
     generate_run_id,
@@ -29,14 +29,16 @@ class AgentOrchestrator:
     def __init__(
         self,
         llm_client: AsyncOpenAI | None = None,
-        dashboard_client: DashboardApiClient | None = None,
+        mcp_client: McpClient | None = None,
         tool_registry: ToolRegistry | None = None,
         max_steps: int = DEFAULT_MAX_STEPS,
         model: str | None = None,
     ) -> None:
         self.llm_client = llm_client or get_llm_client()
-        self.dashboard_client = dashboard_client or DashboardApiClient()
-        self.tool_registry = tool_registry or get_tool_registry()
+        self.mcp_client = mcp_client or McpClient()
+        self.tool_registry = tool_registry or get_tool_registry(
+            mcp_client=self.mcp_client
+        )
         self.max_steps = max_steps
         self.model = model or settings.llm_model
 
@@ -77,12 +79,23 @@ class AgentOrchestrator:
             )
 
         try:
+            if hasattr(self.tool_registry, "ensure_tools"):
+                await self.tool_registry.ensure_tools()
+
+            server_instructions = (
+                self.tool_registry.get_server_instructions()
+                if hasattr(self.tool_registry, "get_server_instructions")
+                else None
+            )
+
             # Initialize conversation history with system prompt
             history: list[dict[str, Any]] = [
                 {
                     "role": "system",
                     "content": build_system_prompt(
-                        user_timezone=user_timezone, context=context
+                        user_timezone=user_timezone,
+                        context=context,
+                        server_instructions=server_instructions,
                     ),
                 }
             ]
@@ -225,12 +238,11 @@ class AgentOrchestrator:
                             },
                         }
 
-                        # Execute tool against Dashboard API / anomaly engine
+                        # Execute tool against MCP server / anomaly engine
                         tool_calls_count += 1
                         tool_output = await self.tool_registry.execute(
                             name=tool_name,
                             arguments=parsed_args,
-                            client=self.dashboard_client,
                         )
 
                         # Emit tool_result event to client

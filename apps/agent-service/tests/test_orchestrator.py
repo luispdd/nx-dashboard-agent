@@ -1,13 +1,13 @@
+import json
 from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-import httpx
 import pytest
 
 from agent_service.agent.orchestrator import AgentOrchestrator
-from agent_service.clients.dashboard_api import DashboardApiClient
-from agent_service.tools.registry import build_default_tool_registry
+from agent_service.clients.mcp_client import McpClient, McpToolResult
+from agent_service.tools.registry import ToolRegistry
 
 
 class MockChoiceDeltaToolCallFunction:
@@ -105,70 +105,65 @@ async def test_sequential_multi_turn_execution() -> None:
     mock_llm = MagicMock()
     mock_llm.chat.completions.create = AsyncMock(side_effect=mock_create)
 
-    # Mock dashboard client responses for stats
-    def handler(request: httpx.Request) -> httpx.Response:
-        from_param = request.url.params.get("from")
-        mean_val = 21.4 if "2026-10-14" in from_param else 18.9
-        return httpx.Response(
-            200,
-            json={
-                "metric": "temperature",
-                "unit": "°C",
-                "stats": [
-                    {
-                        "device_id": "esp32c6",
-                        "mean": mean_val,
-                        "std": 1.5,
-                        "min": 15.0,
-                        "max": 25.0,
-                        "count": 288,
-                        "missing_ratio": 0.0,
-                    }
-                ],
-            },
-        )
-
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(handler), base_url="http://test"
-    ) as raw_client:
-        dash_client = DashboardApiClient(client=raw_client)
-        registry = build_default_tool_registry()
-
-        orchestrator = AgentOrchestrator(
-            llm_client=mock_llm,
-            dashboard_client=dash_client,
-            tool_registry=registry,
-            max_steps=5,
-            model="test-model",
-        )
-
-        events: list[dict[str, Any]] = []
-        async for event in orchestrator.run(
-            messages=[
+    async def fake_call_tool(name: str, arguments: dict[str, Any]) -> McpToolResult:
+        from_param = arguments.get("from_ts") or arguments.get("from", "")
+        mean_val = 21.4 if "2026-10-14" in str(from_param) else 18.9
+        payload = {
+            "metric": "temperature",
+            "unit": "°C",
+            "stats": [
                 {
-                    "role": "user",
-                    "content": "compare the average temperature deviation between yesterday and last tuesday for esp32c6",
+                    "device_id": "esp32c6",
+                    "mean": mean_val,
+                    "std": 1.5,
+                    "min": 15.0,
+                    "max": 25.0,
+                    "count": 288,
+                    "missing_ratio": 0.0,
                 }
-            ]
-        ):
-            events.append(event)
+            ],
+        }
+        return McpToolResult(content=[{"type": "text", "text": json.dumps(payload)}])
 
-        event_types = [e["event"] for e in events]
-        assert "tool_call" in event_types
-        assert "tool_result" in event_types
-        assert "token" in event_types
-        assert "done" in event_types
+    mock_mcp = AsyncMock(spec=McpClient)
+    mock_mcp.call_tool = AsyncMock(side_effect=fake_call_tool)
+    registry = ToolRegistry(mcp_client=mock_mcp)
 
-        # Verify sequential tool execution occurred
-        tool_calls = [e for e in events if e["event"] == "tool_call"]
-        assert len(tool_calls) == 2
-        assert tool_calls[0]["data"]["args"]["from_ts"] == "2026-10-14T00:00:00Z"
-        assert tool_calls[1]["data"]["args"]["from_ts"] == "2026-10-06T00:00:00Z"
+    orchestrator = AgentOrchestrator(
+        llm_client=mock_llm,
+        mcp_client=mock_mcp,
+        tool_registry=registry,
+        max_steps=5,
+        model="test-model",
+    )
 
-        tool_results = [e for e in events if e["event"] == "tool_result"]
-        assert len(tool_results) == 2
-        assert tool_results[0]["data"]["result"]["result"]["stats"][0]["mean"] == 21.4
-        assert tool_results[1]["data"]["result"]["result"]["stats"][0]["mean"] == 18.9
+    events: list[dict[str, Any]] = []
+    async for event in orchestrator.run(
+        messages=[
+            {
+                "role": "user",
+                "content": "compare the average temperature deviation between yesterday and last tuesday for esp32c6",
+            }
+        ]
+    ):
+        events.append(event)
+
+    event_types = [e["event"] for e in events]
+    assert "tool_call" in event_types
+    assert "tool_result" in event_types
+    assert "token" in event_types
+    assert "done" in event_types
+
+    # Verify sequential tool execution occurred
+    tool_calls = [e for e in events if e["event"] == "tool_call"]
+    assert len(tool_calls) == 2
+    assert tool_calls[0]["data"]["args"]["from_ts"] == "2026-10-14T00:00:00Z"
+    assert tool_calls[1]["data"]["args"]["from_ts"] == "2026-10-06T00:00:00Z"
+
+    tool_results = [e for e in events if e["event"] == "tool_result"]
+    assert len(tool_results) == 2
+    assert tool_results[0]["data"]["result"]["result"]["stats"][0]["mean"] == 21.4
+    assert tool_results[1]["data"]["result"]["result"]["stats"][0]["mean"] == 18.9
 
 
 @pytest.mark.asyncio
@@ -192,34 +187,29 @@ async def test_step_limit_guardrail() -> None:
     mock_llm = MagicMock()
     mock_llm.chat.completions.create = AsyncMock(side_effect=infinite_tool_calls)
 
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json=["esp32c6"])
-
-    async with httpx.AsyncClient(
-        transport=httpx.MockTransport(handler), base_url="http://test"
-    ) as raw_client:
-        dash_client = DashboardApiClient(client=raw_client)
-        registry = build_default_tool_registry()
-
-        orchestrator = AgentOrchestrator(
-            llm_client=mock_llm,
-            dashboard_client=dash_client,
-            tool_registry=registry,
-            max_steps=2,  # Strict cap of 2 steps
-            model="test-model",
+    mock_mcp = AsyncMock(spec=McpClient)
+    mock_mcp.call_tool = AsyncMock(
+        return_value=McpToolResult(
+            content=[{"type": "text", "text": json.dumps(["esp32c6"])}]
         )
+    )
+    registry = ToolRegistry(mcp_client=mock_mcp)
 
-        events: list[dict[str, Any]] = []
-        async for event in orchestrator.run(
-            messages=[{"role": "user", "content": "loop"}]
-        ):
-            events.append(event)
+    orchestrator = AgentOrchestrator(
+        llm_client=mock_llm,
+        mcp_client=mock_mcp,
+        tool_registry=registry,
+        max_steps=2,  # Strict cap of 2 steps
+        model="test-model",
+    )
 
-        event_types = [e["event"] for e in events]
-        assert "error" in event_types
-        assert "done" in event_types
+    events: list[dict[str, Any]] = []
+    async for event in orchestrator.run(messages=[{"role": "user", "content": "loop"}]):
+        events.append(event)
 
-        error_event = next(e for e in events if e["event"] == "error")
-        assert (
-            "Maximum tool calling steps (2) exceeded" in error_event["data"]["message"]
-        )
+    event_types = [e["event"] for e in events]
+    assert "error" in event_types
+    assert "done" in event_types
+
+    error_event = next(e for e in events if e["event"] == "error")
+    assert "Maximum tool calling steps (2) exceeded" in error_event["data"]["message"]

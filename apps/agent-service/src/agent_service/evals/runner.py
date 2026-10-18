@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 from agent_service.agent.orchestrator import AgentOrchestrator
-from agent_service.clients.dashboard_api import DashboardApiClient
 from agent_service.config import settings
 from agent_service.llm_client import get_llm_client
 from agent_service.tools.registry import get_tool_registry
@@ -123,15 +122,19 @@ async def evaluate_single_case(
     }
 
 
+from agent_service.clients.mcp_client import McpClient
+
+
 async def run_eval_suite(
     dataset_path: Path | str | None = None,
     orchestrator: AgentOrchestrator | None = None,
 ) -> dict[str, Any]:
     dataset = load_dataset(dataset_path)
+    registry = get_tool_registry()
     orch = orchestrator or AgentOrchestrator(
         llm_client=get_llm_client(),
-        dashboard_client=DashboardApiClient(),
-        tool_registry=get_tool_registry(),
+        mcp_client=McpClient(),
+        tool_registry=registry,
     )
 
     results: list[dict[str, Any]] = []

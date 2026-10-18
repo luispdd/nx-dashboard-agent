@@ -23,13 +23,13 @@ apps/agent-service/
     config.py          # pydantic-settings
     api/               # routers, request/response models
     agent/             # orchestration, system prompt, step limits
-    tools/             # tool definitions + implementations
+    tools/             # registry, MCP adapter, core contract validator, analysis tools
     analysis/          # anomaly detection (pure functions)
-    clients/           # NestJS API client (generated), LLM client
+    clients/           # MCP client (Streamable HTTP / SSE), LLM client
   tests/
 ```
 
-Keep pure logic (analysis, time handling) free of framework imports so it is easy to test.
+Keep pure logic (analysis, time handling) free of framework imports so it is easy to test. Data querying tools are discovered at runtime over MCP (`/api/mcp`); the agent service does not maintain hand-written or generated REST query clients.
 
 ## Typing and style
 

@@ -14,3 +14,29 @@ def test_build_system_prompt_calendar_injection() -> None:
     assert "Factual Grounding" in prompt
     assert "Never fabricate, estimate, or hallucinate" in prompt
     assert "ISO-8601 UTC timestamps ending with Z" in prompt
+
+
+def test_static_prompt_contains_no_data_tool_names() -> None:
+    prompt = build_system_prompt()
+
+    data_tool_names = [
+        "list_metrics",
+        "list_devices",
+        "get_stats",
+        "get_series",
+        "compare_devices",
+        "describe_dataset",
+    ]
+
+    for tool_name in data_tool_names:
+        assert tool_name not in prompt, (
+            f"Data tool name '{tool_name}' must not appear in the static system prompt"
+        )
+
+
+def test_build_system_prompt_server_instructions_injection() -> None:
+    instructions = "Always check device firmware versions before comparing stats."
+    prompt = build_system_prompt(server_instructions=instructions)
+
+    assert "## Data Source Instructions" in prompt
+    assert instructions in prompt

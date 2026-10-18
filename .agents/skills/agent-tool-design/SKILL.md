@@ -9,24 +9,26 @@ The agent runs on a local model (Unsloth on `http://127.0.0.1:8888/api`, model `
 
 ## Principles
 
-- **Narrow, typed tools.** No free-form SQL tool. Each tool does one thing and has a Pydantic-validated input schema.
-- **Enum-constrained parameters.** `metric_key` is an enum generated from the catalogue at startup and included in the tool JSON schema. Devices are validated against the known list.
-- **Deterministic analysis, LLM interpretation.** Statistics and anomaly detection are computed in Python. The model explains the structured findings; it does not compute them or eyeball raw series.
+- **Narrow, typed tools.** No free-form SQL tool. Each tool does one thing and has a Pydantic-validated or MCP-defined input schema.
+- **Runtime tool discovery via MCP.** Data querying tools are discovered dynamically from the NestJS MCP server (`/api/mcp`) using standard Model Context Protocol. The agent maintains zero hardcoded REST data-query clients.
+- **Schema normalization.** MCP tool schemas are sanitized and normalized for OpenAI function calling (stripping `$schema`, `$id`, `$defs`, enforcing `additionalProperties: false`).
+- **Deterministic analysis, LLM interpretation.** Statistics and anomaly detection are computed deterministically in Python. The model explains the structured findings; it does not compute them or eyeball raw series.
+- **Decoupled anomaly detection.** The local `detect_anomalies` tool queries telemetry through the MCP core contract (`list_metrics`, `get_series`) using windowed chunks under the `MCP_MAX_POINTS_PER_CALL=500` point cap to maintain full anomaly recall without server-side bucket promotion.
+- **Prompt generalization.** The static system prompt contains no hardcoded data tool names; server instructions returned by MCP servers during discovery are dynamically injected under `## Data Source Instructions`.
 - **Resolve time in code.** Tools accept either a preset (`last_24h`, `last_7d`, `last_30d`) or explicit ISO-8601 UTC `from`/`to`. The service resolves presets using the current time and the user's timezone.
-- **The agent calls the NestJS API.** No direct database access from the agent service.
+- **The agent calls the NestJS MCP server.** No direct database access from the agent service.
 
-## Tool catalogue (see the plan for current status)
+## Tool catalogue
 
-`list_metrics`, `list_devices`, `get_series`, `get_stats`, `compare_devices`, `detect_anomalies`. Keep the catalogue small; every new tool needs a clear reason, a schema, tests and an eval case.
+- **Discovered via MCP (`/api/mcp`):** `list_metrics`, `list_devices`, `get_series`, `get_stats`, `compare_devices`, and any new tools added to the MCP server.
+- **Local deterministic analysis tools:** `detect_anomalies` (wired through the MCP core contract). Local tool names cannot be shadowed or overridden by MCP tools (collision detection).
 
-## Writing a tool
+## Adding or exposing an MCP tool
 
-1. Name: verb_noun, snake_case. Description: when to use it, in one or two sentences, written for a small model.
-2. Input: Pydantic model, strict, with descriptions and sensible defaults (`include_on_demand=false`).
-3. Output: compact, structured, bounded in size, with **units included** and explicit "no data" markers (never silent zeros).
-4. Errors: return structured error data the model can act on ("unknown metric_key; valid: ..."), not stack traces.
-5. Timeouts and retries are handled in the tool layer, not in the prompt.
-6. Add: unit tests, a contract test against the API client, and at least one eval question.
+1. Implement the tool on the NestJS MCP server (`apps/dashboard-api/src/app/mcp/tools/`).
+2. Define a clear name (`verb_noun`), concise description, and strict Zod input schema.
+3. The agent service automatically discovers the tool at runtime without modifying Python code.
+4. If the tool serves as part of the core contract required for local analysis (e.g. `list_metrics`, `get_series`), ensure it conforms to `docs/contracts/mcp-core-contract.json`.
 
 ## Anomaly detection
 

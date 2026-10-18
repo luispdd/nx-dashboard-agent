@@ -59,7 +59,11 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_model: str = ""
     llm_api_key: str = ""
-    dashboard_api_url: str = "http://localhost:3000"
+    mcp_server_urls: str = "http://localhost:3000/api/mcp"
+    mcp_auth_token: str = ""
+    mcp_tool_list_ttl_seconds: int = 300
+    mcp_call_timeout_seconds: float = 15.0
+    tool_result_max_chars: int = 8000
     runtime_config_path: str | None = None
     running_in_docker: bool = False
     log_payloads: bool = False
@@ -79,6 +83,12 @@ class Settings(BaseSettings):
             self.llm_base_url = normalize_docker_url(
                 self.llm_base_url, running_in_docker=True
             )
+            urls = [
+                normalize_docker_url(u.strip(), running_in_docker=True)
+                for u in self.mcp_server_urls.split(",")
+                if u.strip()
+            ]
+            self.mcp_server_urls = ",".join(urls)
 
     def apply_runtime_config(self) -> None:
         target_path = find_runtime_config_path(self.runtime_config_path)
@@ -104,6 +114,14 @@ class Settings(BaseSettings):
             log_config = data.get("logging", {})
             if "log_payloads" in log_config:
                 self.log_payloads = bool(log_config["log_payloads"])
+
+            mcp_config = data.get("mcp", {})
+            if mcp_config.get("server_urls"):
+                self.mcp_server_urls = str(mcp_config["server_urls"])
+            if mcp_config.get("auth_token"):
+                self.mcp_auth_token = str(mcp_config["auth_token"])
+            if mcp_config.get("tools_backend"):
+                self.tools_backend = str(mcp_config["tools_backend"])
         except Exception as err:  # noqa: BLE001
             logger.warning(
                 "Failed to load runtime configuration from %s: %s", target_path, err

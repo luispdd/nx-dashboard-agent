@@ -8,7 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from sse_starlette.sse import EventSourceResponse
 
 from agent_service.agent.orchestrator import AgentOrchestrator
-from agent_service.clients.dashboard_api import DashboardApiClient
 from agent_service.context import (
     generate_run_id,
     reset_current_run_id,
@@ -55,18 +54,16 @@ async def chat_stream(request: Request, body: ChatRequest) -> EventSourceRespons
     """Streams multi-step conversational agent interaction over Server-Sent Events (SSE)."""
     # Grab application state clients or instantiate defaults
     custom_llm = getattr(request.app.state, "llm_client", None)
-    dashboard_client = (
-        getattr(request.app.state, "dashboard_client", None) or DashboardApiClient()
-    )
-    tool_registry = (
-        getattr(request.app.state, "tool_registry", None) or get_tool_registry()
-    )
+    mcp_client = getattr(request.app.state, "mcp_client", None)
+    tool_registry = getattr(
+        request.app.state, "tool_registry", None
+    ) or get_tool_registry(mcp_client=mcp_client)
 
     run_id = generate_run_id()
 
     orchestrator = AgentOrchestrator(
         llm_client=custom_llm,
-        dashboard_client=dashboard_client,
+        mcp_client=mcp_client,
         tool_registry=tool_registry,
     )
 

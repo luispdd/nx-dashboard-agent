@@ -26,8 +26,17 @@ const agentDir = path.resolve(import.meta.dirname, '../../../apps/agent-service'
 
 function loadToolSchemas(): ToolSchema[] {
   const script =
-    'import json; from agent_service.tools.registry import get_tool_registry; ' +
-    'print(json.dumps(get_tool_registry().get_openai_tools()))';
+    'import json; ' +
+    'from agent_service.tools.schemas import ListMetricsInput, ListDevicesInput, GetStatsInput, GetSeriesInput, CompareDevicesInput, DetectAnomaliesInput; ' +
+    'from agent_service.tools.registry import ToolDefinition; ' +
+    'defs = [' +
+    'ToolDefinition("list_metrics", "", ListMetricsInput).to_openai_schema(), ' +
+    'ToolDefinition("list_devices", "", ListDevicesInput).to_openai_schema(), ' +
+    'ToolDefinition("get_stats", "", GetStatsInput).to_openai_schema(), ' +
+    'ToolDefinition("get_series", "", GetSeriesInput).to_openai_schema(), ' +
+    'ToolDefinition("compare_devices", "", CompareDevicesInput).to_openai_schema(), ' +
+    'ToolDefinition("detect_anomalies", "", DetectAnomaliesInput).to_openai_schema()' +
+    ']; print(json.dumps(defs))';
   const out = execFileSync('uv', ['run', 'python', '-c', script], { cwd: agentDir, encoding: 'utf8' });
   return JSON.parse(out.trim().split('\n').pop() as string);
 }

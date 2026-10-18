@@ -7,23 +7,19 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
-from agent_service.analysis.anomalies import TelemetryPoint, detect_all_anomalies
-from agent_service.clients.dashboard_api import DashboardApiClient, DashboardApiError
+from agent_service.clients.mcp_client import McpClient, McpClientError
 from agent_service.config import settings
 from agent_service.context import get_current_run_id, get_current_step
-from agent_service.tools.schemas import (
-    CompareDevicesInput,
-    DetectAnomaliesInput,
-    GetSeriesInput,
-    GetStatsInput,
-    ListDevicesInput,
-    ListMetricsInput,
-    resolve_time_range,
+from agent_service.tools.core_data import (
+    handle_detect_anomalies_mcp,
+    validate_core_contract,
 )
+from agent_service.tools.mcp_adapter import mcp_tool_to_openai_function
+from agent_service.tools.schemas import DetectAnomaliesInput
 
 logger = logging.getLogger(__name__)
 
-ToolHandler = Callable[[Any, DashboardApiClient], Awaitable[Any]]
+ToolHandler = Callable[[Any, Any], Awaitable[Any]]
 
 
 @dataclass
@@ -31,15 +27,15 @@ class ToolDefinition:
     name: str
     description: str
     input_model: type[BaseModel]
-    handler: ToolHandler
+    handler: ToolHandler | None = None
 
     def to_openai_schema(self) -> dict[str, Any]:
         schema = self.input_model.model_json_schema()
-        # Clean schema title and extra properties for OpenAI spec
         parameters = {
             "type": "object",
             "properties": schema.get("properties", {}),
             "required": schema.get("required", []),
+            "additionalProperties": False,
         }
         return {
             "type": "function",
@@ -51,154 +47,115 @@ class ToolDefinition:
         }
 
 
-# --- Handlers ---
-
-
-async def handle_list_metrics(
-    params: ListMetricsInput,
-    client: DashboardApiClient,
-) -> dict[str, Any]:
-    metrics = await client.get_metrics()
-    return {"metrics": metrics}
-
-
-async def handle_list_devices(
-    params: ListDevicesInput,
-    client: DashboardApiClient,
-) -> dict[str, Any]:
-    devices = await client.get_devices()
-    return {"devices": devices}
-
-
-async def handle_get_stats(
-    params: GetStatsInput,
-    client: DashboardApiClient,
-) -> dict[str, Any]:
-    from_ts, to_ts = resolve_time_range(
-        params.from_ts, params.to_ts, params.range_preset
-    )
-    stats_data = await client.get_stats(
-        metric=params.metric_key,
-        devices=[params.device_id] if params.device_id else None,
-        from_ts=from_ts,
-        to_ts=to_ts,
-        include_on_demand=params.include_on_demand,
-    )
-    return stats_data
-
-
-async def handle_get_series(
-    params: GetSeriesInput,
-    client: DashboardApiClient,
-) -> dict[str, Any]:
-    from_ts, to_ts = resolve_time_range(
-        params.from_ts, params.to_ts, params.range_preset
-    )
-    series_data = await client.get_series(
-        metric=params.metric_key,
-        devices=params.device_id,
-        from_ts=from_ts,
-        to_ts=to_ts,
-        bucket=params.bucket,
-        limit=params.limit,
-        include_on_demand=params.include_on_demand,
-    )
-    return series_data
-
-
-async def handle_compare_devices(
-    params: CompareDevicesInput,
-    client: DashboardApiClient,
-) -> dict[str, Any]:
-    from_ts, to_ts = resolve_time_range(
-        params.from_ts, params.to_ts, params.range_preset
-    )
-    # Query stats for all devices
-    raw_stats = await client.get_stats(
-        metric=params.metric_key,
-        devices=None,
-        from_ts=from_ts,
-        to_ts=to_ts,
-        include_on_demand=params.include_on_demand,
-    )
-
-    stats_list = raw_stats.get("stats", [])
-    device_summaries = []
-    for item in stats_list:
-        device_summaries.append(
-            {
-                "device_id": item.get("device_id"),
-                "mean": item.get("mean"),
-                "std": item.get("std"),
-                "min": item.get("min"),
-                "max": item.get("max"),
-                "count": item.get("count"),
-            }
+class ToolRegistry:
+    def __init__(
+        self,
+        mcp_client: McpClient | None = None,
+        ttl_seconds: int | None = None,
+        max_result_chars: int | None = None,
+        backend: str = "mcp",
+    ) -> None:
+        self.backend = backend
+        self.mcp_client = mcp_client or McpClient()
+        self.ttl_seconds = (
+            ttl_seconds
+            if ttl_seconds is not None
+            else settings.mcp_tool_list_ttl_seconds
+        )
+        self.max_result_chars = (
+            max_result_chars
+            if max_result_chars is not None
+            else settings.tool_result_max_chars
         )
 
-    return {
-        "metric": raw_stats.get("metric", params.metric_key),
-        "unit": raw_stats.get("unit", ""),
-        "window": {"from": from_ts, "to": to_ts},
-        "devices_count": len(device_summaries),
-        "devices": device_summaries,
-    }
+        self._local_tools: dict[str, ToolDefinition] = {}
 
+        # MCP cache state
+        self._cached_tools: list[Any] = []
+        self._cached_openai_tools: list[dict[str, Any]] = []
+        self._server_instructions: str | None = None
+        self._last_refresh_time: float = 0.0
+        self._detect_anomalies_enabled: bool = True
 
-async def handle_detect_anomalies(
-    params: DetectAnomaliesInput,
-    client: DashboardApiClient,
-) -> dict[str, Any]:
-    from_ts, to_ts = resolve_time_range(
-        params.from_ts, params.to_ts, params.range_preset
-    )
-    # Fetch series points for all devices or specific device
-    series_resp = await client.get_series(
-        metric=params.metric_key,
-        devices=params.device_id,
-        from_ts=from_ts,
-        to_ts=to_ts,
-        bucket="5m",
-        limit=200,
-    )
-
-    series_by_device: dict[str, list[TelemetryPoint]] = {}
-    for device_entry in series_resp.get("series", []):
-        dev_id = device_entry["device_id"]
-        pts = [
-            TelemetryPoint(ts=p["ts"], value=float(p["value"]))
-            for p in device_entry.get("points", [])
-        ]
-        series_by_device[dev_id] = pts
-
-    findings = detect_all_anomalies(series_by_device, metric_key=params.metric_key)
-
-    return {
-        "metric": params.metric_key,
-        "window": {"from": from_ts, "to": to_ts},
-        "anomalies_count": len(findings),
-        "anomalies": [f.model_dump() for f in findings],
-    }
-
-
-class ToolRegistry:
-    def __init__(self) -> None:
-        self._tools: dict[str, ToolDefinition] = {}
-
-    def register(self, tool: ToolDefinition) -> None:
-        self._tools[tool.name] = tool
+    def register_local_tool(self, tool: ToolDefinition) -> None:
+        self._local_tools[tool.name] = tool
 
     def get_tool(self, name: str) -> ToolDefinition | None:
-        return self._tools.get(name)
+        return self._local_tools.get(name)
+
+    def get_server_instructions(self) -> str | None:
+        return self._server_instructions
+
+    async def ensure_tools(self) -> list[dict[str, Any]]:
+        """Ensures tool definitions are populated and fresh according to TTL."""
+        now = time.time()
+        if (
+            self._cached_openai_tools
+            and (now - self._last_refresh_time) < self.ttl_seconds
+        ):
+            return self._cached_openai_tools
+
+        try:
+            discovered = await self.mcp_client.list_tools()
+            tools = discovered.tools
+            self._server_instructions = discovered.instructions
+
+            # Collision check: local analysis tools must not be shadowed by MCP tools
+            for t in tools:
+                t_name = t.name if hasattr(t, "name") else t.get("name")
+                if t_name in self._local_tools:
+                    raise ValueError(
+                        f"Tool name collision detected: tool '{t_name}' exists as a local tool and was also discovered on MCP server at {self.mcp_client.url}"
+                    )
+
+            # Core contract validation for anomaly detection
+            contract_valid = validate_core_contract(tools)
+            self._detect_anomalies_enabled = contract_valid
+            if not contract_valid:
+                logger.warning(
+                    "Core telemetry contract validation failed; 'detect_anomalies' is disabled."
+                )
+
+            # Build OpenAI tool schemas
+            openai_tools = [mcp_tool_to_openai_function(t) for t in tools]
+            if (
+                self._detect_anomalies_enabled
+                and "detect_anomalies" in self._local_tools
+            ):
+                openai_tools.append(
+                    self._local_tools["detect_anomalies"].to_openai_schema()
+                )
+
+            self._cached_tools = tools
+            self._cached_openai_tools = openai_tools
+            self._last_refresh_time = now
+            return self._cached_openai_tools
+
+        except Exception as err:
+            if self._cached_openai_tools:
+                logger.warning(
+                    "Failed to refresh MCP tools from %s (%s); reusing cached tools",
+                    self.mcp_client.url,
+                    err,
+                )
+                return self._cached_openai_tools
+            logger.error(
+                "Failed to discover MCP tools from %s and no cache exists: %s",
+                self.mcp_client.url,
+                err,
+            )
+            raise
 
     def get_openai_tools(self) -> list[dict[str, Any]]:
-        return [tool.to_openai_schema() for tool in self._tools.values()]
+        if self._cached_openai_tools:
+            return self._cached_openai_tools
+        return [t.to_openai_schema() for t in self._local_tools.values()]
 
     async def execute(
         self,
         name: str,
         arguments: dict[str, Any] | str,
-        client: DashboardApiClient,
+        client: Any = None,
     ) -> dict[str, Any]:
         t0 = time.perf_counter()
 
@@ -206,8 +163,25 @@ class ToolRegistry:
             status: str, payload: dict[str, Any], raw_args: Any = None
         ) -> dict[str, Any]:
             duration_ms = round((time.perf_counter() - t0) * 1000, 2)
+
+            # Check result truncation limit
             try:
-                result_bytes = len(json.dumps(payload).encode("utf-8"))
+                raw_json = json.dumps(payload)
+                if len(raw_json) > self.max_result_chars:
+                    notice = (
+                        f"\n[Result truncated to {self.max_result_chars} characters]"
+                    )
+                    truncated_text = (
+                        raw_json[: self.max_result_chars - len(notice)] + notice
+                    )
+                    payload = {
+                        "status": status,
+                        "result": truncated_text,
+                        "truncated": True,
+                    }
+                    result_bytes = len(truncated_text.encode("utf-8"))
+                else:
+                    result_bytes = len(raw_json.encode("utf-8"))
             except Exception:  # noqa: BLE001
                 result_bytes = 0
 
@@ -240,17 +214,6 @@ class ToolRegistry:
             )
             return payload
 
-        tool = self.get_tool(name)
-        if not tool:
-            return _finish(
-                "error",
-                {
-                    "error": f"Unknown tool '{name}'. Available tools: {list(self._tools.keys())}",
-                    "status": "error",
-                },
-                raw_args=arguments,
-            )
-
         # Parse string arguments if received as JSON string from LLM
         parsed_args: dict[str, Any]
         if isinstance(arguments, str):
@@ -268,20 +231,29 @@ class ToolRegistry:
         else:
             parsed_args = arguments
 
-        try:
-            validated_input = tool.input_model.model_validate(parsed_args)
-        except ValidationError as err:
-            return _finish(
-                "error",
-                {
-                    "error": f"Parameter validation error for tool '{name}': {err}",
-                    "status": "error",
-                },
-                raw_args=parsed_args,
-            )
-
-        try:
-            result = await tool.handler(validated_input, client)
+        # 1. Local anomaly detection tool wired via MCP core contract
+        if name == "detect_anomalies":
+            if not self._detect_anomalies_enabled:
+                return _finish(
+                    "error",
+                    {
+                        "error": "detect_anomalies is disabled because the connected MCP server does not conform to the core telemetry contract.",
+                        "status": "error",
+                    },
+                    raw_args=parsed_args,
+                )
+            try:
+                validated_input = DetectAnomaliesInput.model_validate(parsed_args)
+            except ValidationError as err:
+                return _finish(
+                    "error",
+                    {
+                        "error": f"Parameter validation error for tool '{name}': {err}",
+                        "status": "error",
+                    },
+                    raw_args=parsed_args,
+                )
+            result = await handle_detect_anomalies_mcp(validated_input, self.mcp_client)
             return _finish(
                 "ok",
                 {
@@ -290,18 +262,39 @@ class ToolRegistry:
                 },
                 raw_args=parsed_args,
             )
-        except DashboardApiError as err:
+
+        # 2. Dynamic routing to MCP server
+        try:
+            mcp_res = await self.mcp_client.call_tool(name, parsed_args)
+            if mcp_res.is_error:
+                return _finish(
+                    "error",
+                    {
+                        "error": mcp_res.text or "MCP tool execution error",
+                        "status": "error",
+                        "is_error": True,
+                    },
+                    raw_args=parsed_args,
+                )
+            return _finish(
+                "ok",
+                {
+                    "status": "success",
+                    "result": mcp_res.to_payload(),
+                },
+                raw_args=parsed_args,
+            )
+        except McpClientError as err:
             return _finish(
                 "error",
                 {
-                    "error": f"Dashboard API query failed: {err.message}",
-                    "status_code": err.status_code,
+                    "error": f"MCP tool execution failed: {err}",
                     "status": "error",
                 },
                 raw_args=parsed_args,
             )
         except Exception as err:
-            logger.exception("Unexpected error executing tool %s", name)
+            logger.exception("Unexpected error executing MCP tool %s", name)
             return _finish(
                 "error",
                 {
@@ -312,64 +305,32 @@ class ToolRegistry:
             )
 
 
-def build_default_tool_registry() -> ToolRegistry:
-    registry = ToolRegistry()
-    registry.register(
-        ToolDefinition(
-            name="list_metrics",
-            description="Retrieve catalogue of all available telemetry metrics and their physical units.",
-            input_model=ListMetricsInput,
-            handler=handle_list_metrics,
-        )
-    )
-    registry.register(
-        ToolDefinition(
-            name="list_devices",
-            description="Retrieve list of all active registered IoT device board identifiers (e.g. 'esp32c6').",
-            input_model=ListDevicesInput,
-            handler=handle_list_devices,
-        )
-    )
-    registry.register(
-        ToolDefinition(
-            name="get_stats",
-            description="Retrieve statistical summaries (min, max, mean, std, count) for a metric and optional device over a time window.",
-            input_model=GetStatsInput,
-            handler=handle_get_stats,
-        )
-    )
-    registry.register(
-        ToolDefinition(
-            name="get_series",
-            description="Retrieve downsampled time-series data points for a specific device and metric.",
-            input_model=GetSeriesInput,
-            handler=handle_get_series,
-        )
-    )
-    registry.register(
-        ToolDefinition(
-            name="compare_devices",
-            description="Retrieve comparative statistical summaries across all devices for a given metric and time window.",
-            input_model=CompareDevicesInput,
-            handler=handle_compare_devices,
-        )
-    )
-    registry.register(
+def build_default_tool_registry(
+    mcp_client: McpClient | None = None,
+) -> ToolRegistry:
+    registry = ToolRegistry(mcp_client=mcp_client)
+
+    # Local analysis tools
+    registry.register_local_tool(
         ToolDefinition(
             name="detect_anomalies",
             description="Execute deterministic statistical anomaly detection (peer deviations, spikes, flatlines, gaps) for a metric.",
             input_model=DetectAnomaliesInput,
-            handler=handle_detect_anomalies,
         )
     )
+
     return registry
 
 
 _default_registry: ToolRegistry | None = None
 
 
-def get_tool_registry() -> ToolRegistry:
+def get_tool_registry(
+    mcp_client: McpClient | None = None,
+) -> ToolRegistry:
     global _default_registry
-    if _default_registry is None:
-        _default_registry = build_default_tool_registry()
+    if _default_registry is None or (
+        mcp_client is not None and _default_registry.mcp_client != mcp_client
+    ):
+        _default_registry = build_default_tool_registry(mcp_client=mcp_client)
     return _default_registry
