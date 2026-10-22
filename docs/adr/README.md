@@ -21,6 +21,7 @@ This directory documents the significant architectural decisions made during the
 | [ADR-024](ADR-024-utc-iso8601-timestamps.md) | Temporal Data — UTC with Z Timestamps Everywhere Internally | Accepted | Data / Invariants |
 | [ADR-025](ADR-025-stub-llm-at-e2e-boundary.md) | End-to-End Testing — Stub LLM Endpoint at the E2E Boundary | Accepted | Testing / E2E |
 | [ADR-026](ADR-026-logs-only-observability.md) | Observability — Structured Logs-Only Observability Without Heavy APM | Accepted | Operations / Telemetry |
+| [ADR-027](ADR-027-local-only-threat-model-and-defense-in-depth.md) | Local Hardening — Local-Only Threat Model and Defense-in-Depth Architecture | Accepted | Security / Architecture |
 
 ## ADR Format
 

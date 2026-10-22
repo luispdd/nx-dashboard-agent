@@ -52,9 +52,17 @@ Commands go through `nx ...` / `bun`. Use the workspace's installed React versio
 - Keyboard accessible input and send action, live region for streamed messages, focus management on new messages.
 - Disable or queue sending while a response streams, and allow stopping it.
 
+## Security & Local Hardening (ADR-027)
+
+- **Loopback Dev Server**: Vite dev server binds to `127.0.0.1` / `localhost` on port 4204.
+- **Restricted CORS**: Dev server plugins restrict cross-origin access to configured allowed origins (`localhost:4200`, `127.0.0.1:4200`).
+- **Error Detail Extraction**: `useChatStream` extracts and surfaces human-readable error messages from non-2xx responses (413 payload bounds, 422 validation, 429 rate limits) rather than generic HTTP status errors.
+- **Markdown Link Sanitization**: Markdown links in `markdown-content.tsx` must be sanitized with `isSafeUrl()`. Schemes like `javascript:`, `data:`, `vbscript:`, and `file:` are stripped and rendered as plain text spans to prevent XSS.
+
 ## Tests
 
 - **Unit / Component Tests**: Vitest (`@nx/vite:test` or `@nx/vitest`) for component and hook tests with streaming states (mock the SSE stream, inject deterministic events), including error and abort paths. No real LLM in unit tests.
+- **Security Tests**: Verify link sanitization in `markdown-content.spec.tsx` and error body extraction in `use-chat-stream.spec.ts`.
 - **E2E Tests**: Playwright for end-to-end user journeys (standalone and within shell). See `testing-strategy`.
 
 ## Checklist
@@ -63,6 +71,6 @@ Commands go through `nx ...` / `bun`. Use the workspace's installed React versio
 - [ ] Bundled via Vite with Tailwind CSS + SCSS
 - [ ] No hexadecimal color values in HTML/JSX templates; all colors stored in theme files and applied via semantic classes or SCSS variables
 - [ ] Streaming hook handles all event types, errors and cancellation
-- [ ] Tool calls shown as steps; output rendered safely
+- [ ] Tool calls shown as steps; output rendered safely with link sanitization (no `javascript:` XSS)
 - [ ] Standalone dev run and runtime load in the shell both work
 - [ ] Lint and tests pass (`nx affected -t lint test`)

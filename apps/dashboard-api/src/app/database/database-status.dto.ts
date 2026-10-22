@@ -2,18 +2,21 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class DatabaseStatusDto {
   @ApiProperty({
+    type: Boolean,
     description: 'Indicates whether the active database contains synthetic demo data',
     example: true,
   })
   isDemo!: boolean;
 
   @ApiProperty({
+    type: Number,
     description: 'Total count of readings processed into the database',
     example: 6174,
   })
   readingCount!: number;
 
   @ApiProperty({
+    type: Number,
     description: 'Total count of distinct IoT devices represented',
     example: 3,
   })

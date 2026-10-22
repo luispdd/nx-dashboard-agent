@@ -8,7 +8,8 @@ from agent_service.security import (
 )
 
 
-def test_roundtrip_encryption_decryption() -> None:
+def test_roundtrip_encryption_decryption(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CONFIG_ENCRYPTION_KEY", "test-encryption-key-for-unit-tests")
     original = "sk-proj-super-secret-api-key-12345"
     encrypted = encrypt_secret(original)
 
@@ -22,6 +23,28 @@ def test_roundtrip_encryption_decryption() -> None:
 
     decrypted = decrypt_secret(encrypted)
     assert decrypted == original
+
+
+def test_missing_encryption_key_raises_runtime_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CONFIG_ENCRYPTION_KEY", raising=False)
+    monkeypatch.delenv("ALLOW_INSECURE_DEV_KEY", raising=False)
+
+    with pytest.raises(RuntimeError, match="CONFIG_ENCRYPTION_KEY is not configured"):
+        encrypt_secret("some-secret")
+
+
+def test_insecure_dev_key_fallback_with_warning(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.delenv("CONFIG_ENCRYPTION_KEY", raising=False)
+    monkeypatch.setenv("ALLOW_INSECURE_DEV_KEY", "true")
+
+    with caplog.at_level("WARNING"):
+        encrypted = encrypt_secret("some-secret")
+        decrypted = decrypt_secret(encrypted)
+
+    assert decrypted == "some-secret"
+    assert "Using insecure development key for CONFIG_ENCRYPTION_KEY" in caplog.text
 
 
 def test_custom_secret_key() -> None:

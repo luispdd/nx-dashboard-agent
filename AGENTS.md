@@ -35,6 +35,7 @@ IoT dashboard + data agent: a proof of concept demonstrating full-stack IoT tele
 - **Containerization & Deployment:** All services (web host Nginx, NestJS API, FastAPI Agent Service) run in Docker. The optional local LLM runs on the host and is reached via `extra_hosts: ["host.docker.internal:host-gateway"]`.
 - **Environment Configuration:** A single centralized `.env` at workspace root drives configuration across Docker Compose and local commands (tracked via `.env.example`).
 - **Data Ingestion & Demo Data:** A missing database triggers automatic demo data generation on startup (`is_demo` metadata), indicated visibly in the dashboard toolbar. Real database ingestion is initiated on demand from the Dashboard Settings view with an input file selector.
+- **Local Hardening & Loopback Isolation:** All local servers and published Docker ports bind to `127.0.0.1`. No browser-held secrets or tokens. Backends validate `ALLOWED_HOSTS` and `ALLOWED_ORIGINS`. In-process rate limits and LRU session eviction protect the chat endpoint.
 
 ## Tool Selection & Tooling
 
@@ -54,6 +55,7 @@ bun run e2e                                         # run unified workspace Play
 bun run docker:build                                # build production Docker images for all services
 bun run docker:up                                   # launch full containerized stack via Docker Compose
 bun run docker:down                                 # stop containerized stack
+bun run security:audit                              # run JS (bun audit) and Python (pip-audit) security checks
 nx run dashboard-api:seed                            # generate synthetic source SQLite DB
 nx run dashboard-api:etl                            # run in-process ETL pipeline to build derived DB
 nx run agent-service:eval                           # run agent evaluation benchmark against active LLM
@@ -74,6 +76,8 @@ cd apps/agent-service && uv run ruff check .        # run Python linter
 6. **Do not implement beyond the active OpenSpec change.** If something is missing from the spec, update the spec or ask.
 7. **No private data in the repo.** Use the synthetic seed generator for fixtures and demos.
 8. **No absolute host or user file paths.** Never write, commit, or link machine-specific absolute paths (`/home/...`, `file:///...`) in docs, ADRs, or OpenSpec changes. Always use repo-relative paths or relative markdown links.
+9. **Loopback only by default.** Services, frontend dev servers, and container published ports bind to `127.0.0.1`. Never expose services on `0.0.0.0` or allow wildcard CORS in local deployments.
+10. **Strict configuration encryption.** Stored credentials require a 32-byte hex `CONFIG_ENCRYPTION_KEY`. Never hardcode fallback keys or log plain-text secrets.
 
 ## Definition of done
 

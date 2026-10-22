@@ -66,9 +66,18 @@ Keep pure logic (analysis, time handling) free of framework imports so it is eas
 - `device_id` is a string (e.g., `'esp32c6'`).
 - Use pandas/numpy/scipy only where they pay off in analysis; keep functions pure and deterministic.
 
+## Security & Local Hardening (ADR-027)
+
+- **Loopback Default**: Service binds to `127.0.0.1` (configurable via `AGENT_HOST`).
+- **Host & Origin Guard**: ASGI middleware validates `Host` against `ALLOWED_HOSTS` and `Origin` against `ALLOWED_ORIGINS` (rejecting mismatches with 403). Requests without Origin are allowed.
+- **In-Process Rate Limiter & Concurrency Tracker**: Sliding window limiter rejects bursts exceeding `CHAT_RATE_LIMIT_PER_MINUTE` with 429 and `Retry-After`. Active concurrent streams are capped at `CHAT_MAX_CONCURRENT_STREAMS`.
+- **Payload & Session Bounds**: Chat messages exceeding `CHAT_MAX_MESSAGE_CHARS` return 413. When sessions reach `CHAT_MAX_SESSIONS`, the oldest idle session is evicted (LRU).
+- **Strict Key Requirement**: `security.py` enforces `CONFIG_ENCRYPTION_KEY` (32-byte hex), failing fast with `RuntimeError` unless `ALLOW_INSECURE_DEV_KEY=true` is set with a prominent log warning.
+- **Secret Redaction**: `JsonFormatter` redacts known key/token patterns and masks sensitive extra attributes. `/health` never exposes keys or tokens.
+
 ## Tests
 
-- `uv run pytest` (or `bunx nx test agent-service`) with deterministic fixtures from the seeded synthetic dataset; no network and no real LLM in unit tests (use a fake LLM client). Evals are separate. See `testing-strategy` and `agent-tool-design`.
+- `uv run pytest` (or `nx test agent-service`) with deterministic fixtures from the seeded synthetic dataset; no network and no real LLM in unit tests (use a fake LLM client). Evals are separate. See `testing-strategy` and `agent-tool-design`.
 
 ## Checklist
 
@@ -77,4 +86,5 @@ Keep pure logic (analysis, time handling) free of framework imports so it is eas
 - [ ] Pydantic models at every boundary; settings from env (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`)
 - [ ] Async I/O, timeouts, SSE ends with `done` or `error`
 - [ ] Aware UTC datetimes only; `device_id` typed as string
-- [ ] Tests pass (`uv run pytest` / `bunx nx test agent-service`)
+- [ ] Loopback binding default (`127.0.0.1`), rate limiting and origin checks enforced
+- [ ] Tests pass (`uv run pytest` / `nx test agent-service`)

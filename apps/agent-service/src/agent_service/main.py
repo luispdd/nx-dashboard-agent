@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from agent_service.api.chat import router as chat_router
@@ -54,6 +55,8 @@ def create_app(
     tool_registry: Any | None = None,
     dashboard_client: Any | None = None,
 ) -> FastAPI:
+    cfg = custom_settings or get_settings()
+
     app = FastAPI(
         title="Agent Service",
         description="FastAPI agent service for IoT dashboard data and chat analysis",
@@ -62,15 +65,50 @@ def create_app(
     )
 
     app.state.session_manager = session_manager or get_session_manager()
-    app.state.settings = custom_settings
+    app.state.settings = cfg
     app.state.llm_client = llm_client
     app.state.mcp_client = mcp_client
     app.state.dashboard_client = dashboard_client
     app.state.tool_registry = tool_registry
 
+    @app.middleware("http")
+    async def host_origin_guard(request: Request, call_next: Any) -> Any:
+        current_cfg: Settings = request.app.state.settings or cfg
+
+        # 1. Host header validation
+        host_header = request.headers.get("host")
+        if host_header:
+            allowed_hosts_lower = [
+                h.lower() for h in current_cfg.effective_allowed_hosts
+            ]
+            host_clean = host_header.strip().lower()
+            host_name_only = host_clean.split(":")[0]
+            if (
+                host_clean not in allowed_hosts_lower
+                and host_name_only not in allowed_hosts_lower
+            ):
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": f"Host '{host_header}' is not allowed"},
+                )
+
+        # 2. Origin header validation
+        origin_header = request.headers.get("origin")
+        if origin_header:
+            allowed_origins_lower = [
+                o.lower() for o in current_cfg.effective_allowed_origins
+            ]
+            if origin_header.strip().lower() not in allowed_origins_lower:
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": f"Origin '{origin_header}' is not allowed"},
+                )
+
+        return await call_next(request)
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=DEFAULT_ALLOWED_ORIGINS,
+        allow_origins=cfg.effective_allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -100,7 +138,14 @@ app = create_app()
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("agent_service.main:app", host="0.0.0.0", port=8000, reload=True)
+    cfg = get_settings()
+    if not cfg.is_loopback_only:
+        logger.warning(
+            "⚠️ Security Warning: agent-service is binding to non-loopback address '%s'. This service is exposed to the network.",
+            cfg.agent_host,
+        )
+
+    uvicorn.run("agent_service.main:app", host=cfg.agent_host, port=cfg.agent_port, reload=True)
 
 
 if __name__ == "__main__":

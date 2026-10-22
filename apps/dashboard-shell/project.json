@@ -120,6 +120,7 @@
         }
       },
       "options": {
+        "host": "127.0.0.1",
         "port": 4200,
         "proxyConfig": "apps/dashboard-shell/proxy.conf.json"
       }

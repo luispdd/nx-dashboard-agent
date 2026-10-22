@@ -99,3 +99,47 @@ def test_session_manager_dependency_provider() -> None:
     mgr3 = get_session_manager()
     assert mgr3 is not mgr1
     assert mgr3.active_session_count() == 0
+
+
+def test_session_manager_lru_eviction() -> None:
+    manager = SessionManager(default_ttl_seconds=3600, max_sessions=3)
+    s1 = manager.get_or_create_session("s1")
+    s2 = manager.get_or_create_session("s2")
+    s3 = manager.get_or_create_session("s3")
+    assert manager.active_session_count() == 3
+
+    # Force access times so s2 is oldest, s3 middle, s1 newest
+    s1.last_accessed_at = datetime.now(UTC)
+    s2.last_accessed_at = datetime.now(UTC) - timedelta(seconds=20)
+    s3.last_accessed_at = datetime.now(UTC) - timedelta(seconds=10)
+
+    # Creating s4 should evict s2 (oldest idle)
+    manager.get_or_create_session("s4")
+    assert manager.active_session_count() == 3
+    assert manager.get_session("s2") is None
+    assert manager.get_session("s1") is not None
+    assert manager.get_session("s3") is not None
+    assert manager.get_session("s4") is not None
+
+
+@pytest.mark.asyncio
+async def test_session_manager_lru_cancels_active_task() -> None:
+    manager = SessionManager(default_ttl_seconds=3600, max_sessions=1)
+    manager.get_or_create_session("s1")
+
+    async def dummy_coro() -> None:
+        try:
+            await asyncio.sleep(100)
+        except asyncio.CancelledError:
+            pass
+
+    task = asyncio.create_task(dummy_coro())
+    manager.set_task("s1", task)
+    assert not task.cancelled()
+
+    # Creating a new session exceeds max_sessions=1, evicting s1
+    manager.get_or_create_session("s2")
+    assert manager.get_session("s1") is None
+    await asyncio.sleep(0)
+    assert task.cancelled()
+

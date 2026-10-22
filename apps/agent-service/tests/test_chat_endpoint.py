@@ -89,3 +89,44 @@ def test_chat_endpoint_mcp_outage() -> None:
         assert "event: error" in body
         assert "Server streaming error" in body
         assert "event: done" in body
+
+
+def test_chat_endpoint_oversized_message() -> None:
+    from agent_service.config import Settings
+
+    cfg = Settings(chat_max_message_chars=100)
+    app = create_app(custom_settings=cfg)
+
+    with TestClient(app) as client:
+        oversized = "A" * 105
+        resp = client.post(
+            "/api/chat",
+            json={"messages": [{"role": "user", "content": oversized}]},
+        )
+        assert resp.status_code == 413
+        assert "exceeds maximum allowed limit" in resp.json()["detail"]
+
+
+def test_chat_endpoint_rate_limiting() -> None:
+    from agent_service.config import Settings
+    from agent_service.rate_limiter import RateLimiter
+
+    cfg = Settings(chat_rate_limit_per_minute=2)
+    limiter = RateLimiter(rate_limit_per_minute=2)
+    app = create_app(custom_settings=cfg)
+    app.state.rate_limiter = limiter
+
+    with TestClient(app) as client:
+        payload = {"messages": [{"role": "user", "content": "Hello"}]}
+
+        r1 = client.post("/api/chat", json=payload)
+        assert r1.status_code == 200
+
+        r2 = client.post("/api/chat", json=payload)
+        assert r2.status_code == 200
+
+        r3 = client.post("/api/chat", json=payload)
+        assert r3.status_code == 429
+        assert "Retry-After" in r3.headers
+        assert "Rate limit exceeded" in r3.json()["detail"]
+

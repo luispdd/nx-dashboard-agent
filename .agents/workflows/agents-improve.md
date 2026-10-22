@@ -14,15 +14,25 @@ Do NOT document changelogs, task summaries, or project specifications (general p
 - **Critical Pitfalls**: "Dead ends" or mistakes made during this session that a future agent might repeat if not explicitly warned.
 - **Essential Operational Commands**: Non-standard or exact commands required for building, flashing, debugging, or validating this project that are not self-evident.
 
-_If the task was routine implementation with zero reusable pitfalls or operational surprises, state that no updates are needed and do not modify the file._
+_If the task was routine implementation with zero reusable pitfalls or operational surprises, state that no updates are needed and do not modify any file._
 
-### Rules for Updating `AGENTS.md`:
+### Routing (decide per insight, before writing):
 
-1. **Target File**: Locate `AGENTS.md` at the repository root (create it if missing).
-2. **Concise & Imperative**: Write telegraphic, direct bullet points or mini-tables. Avoid narrative prose, history lessons, or task recaps.
-3. **Appropriate Section**: Integrate new entries into existing operational sections (e.g., `## Operational Pitfalls & Gotchas`, `## Hardware / Flashing Quirks`, `## Verification Commands`).
-4. **No Duplication**: Check existing entries first; refine existing points rather than adding redundant notes.
+1. **AGENTS.md** — only for cross-cutting knowledge that applies to most sessions in this repo (global build/test/flash commands, repo-wide environment quirks, pitfalls hit regardless of task). Max 1-2 lines per entry.
+2. **Skill file** — for knowledge tied to a specific tool, device, workflow, or domain (e.g. one board, one toolchain, one deployment procedure). Add it to the existing `SKILL.md` that covers that topic.
+   - List existing skills first (`.agents/skills/*/SKILL.md` or the repo's skills directory) and pick the closest match.
+   - Create a new skill only if there is no fit AND the topic has several reusable entries; otherwise default to AGENTS.md.
+   - If a skill is touched, make sure its `description` still says when to use it.
+3. **Pointer** — if AGENTS.md lacks a reference to a skill that now holds relevant knowledge, add a one-line pointer (`See skill <name> for <topic>`), not the content itself.
+4. When in doubt, prefer the skill over AGENTS.md. AGENTS.md is loaded in every session, so every line there has a cost.
+
+### Rules for Updating (AGENTS.md and skills):
+
+1. **Concise & Imperative**: Telegraphic bullets or mini-tables. No narrative prose, history lessons, or task recaps.
+2. **Appropriate Section**: Integrate into existing sections (e.g. `## Operational Pitfalls & Gotchas`, `## Hardware / Flashing Quirks`, `## Verification Commands`); create AGENTS.md at the repo root only if missing.
+3. **No Duplication**: Check AGENTS.md and the relevant skill first; refine existing points instead of adding redundant ones. Never store the same fact in both places.
+4. **Keep it lean**: If AGENTS.md is growing past a few screens, move topic-specific blocks into a skill and leave a pointer.
 
 User input/focus: $ARGUMENTS
 
-Inspect `AGENTS.md`, make only the strictly reusable additions, and summarize only the new rules added.
+Inspect AGENTS.md and the relevant skills, make only the strictly reusable additions, and summarize only the new rules added, stating for each whether it went to AGENTS.md or which skill file.

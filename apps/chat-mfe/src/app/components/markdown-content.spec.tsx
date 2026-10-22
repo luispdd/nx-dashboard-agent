@@ -53,4 +53,31 @@ describe('MarkdownContent', () => {
     expect(rows[0].textContent).toContain('esp32c6');
     expect(rows[1].textContent).toContain('Anomaly');
   });
+
+  it('should render safe http and https links as anchor tags', () => {
+    const markdown = 'Visit [Dashboard](http://localhost:4200) or [Docs](https://example.com)';
+    const { container } = render(<MarkdownContent content={markdown} />);
+
+    const links = container.querySelectorAll('a');
+    expect(links).toHaveLength(2);
+    expect(links[0].getAttribute('href')).toBe('http://localhost:4200');
+    expect(links[0].getAttribute('target')).toBe('_blank');
+    expect(links[0].getAttribute('rel')).toBe('noreferrer');
+    expect(links[1].getAttribute('href')).toBe('https://example.com');
+  });
+
+  it('should sanitize unsafe javascript and data links to prevent XSS', () => {
+    const markdown = 'Click [Exploit](javascript:alert(1)) or [Data](data:text/html,<script>alert(1)</script>)';
+    const { container } = render(<MarkdownContent content={markdown} />);
+
+    const links = container.querySelectorAll('a');
+    expect(links).toHaveLength(0);
+
+    expect(container.textContent).toContain('Click Exploit or Data');
+    const spans = container.querySelectorAll('span');
+    const texts = Array.from(spans).map((s) => s.textContent);
+    expect(texts).toContain('Exploit');
+    expect(texts).toContain('Data');
+  });
 });
+

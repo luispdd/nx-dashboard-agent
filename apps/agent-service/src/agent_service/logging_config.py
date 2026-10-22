@@ -1,9 +1,38 @@
 import json
 import logging
+import re
 from datetime import UTC, datetime
 from typing import Any
 
 from agent_service.context import get_current_run_id, get_current_step
+from agent_service.security import mask_secret
+
+BEARER_PATTERN = re.compile(r"(Bearer\s+)([A-Za-z0-9_\-\.]+)", re.IGNORECASE)
+KEY_PATTERN = re.compile(r"(sk-[A-Za-z0-9_\-\.]{10,})", re.IGNORECASE)
+ENC_PATTERN = re.compile(r"(enc:aes256:[a-f0-9:]+)", re.IGNORECASE)
+
+
+def redact_text(text: str) -> str:
+    """Redacts known token and key patterns from log message text."""
+    text = BEARER_PATTERN.sub(r"\1[REDACTED]", text)
+    text = KEY_PATTERN.sub(lambda m: mask_secret(m.group(1)), text)
+    text = ENC_PATTERN.sub("[ENCRYPTED_SECRET]", text)
+    return text
+
+
+def sanitize_log_value(key: str, val: Any) -> Any:
+    key_lower = key.lower()
+    if any(s in key_lower for s in ("key", "token", "secret", "password", "auth")):
+        if isinstance(val, str):
+            return mask_secret(val)
+        return "***"
+    if isinstance(val, dict):
+        return {sub_k: sanitize_log_value(sub_k, sub_v) for sub_k, sub_v in val.items()}
+    if isinstance(val, list):
+        return [sanitize_log_value(key, item) for item in val]
+    if isinstance(val, str):
+        return redact_text(val)
+    return val
 
 STANDARD_LOG_ATTRS = {
     "name",
@@ -39,11 +68,14 @@ class JsonFormatter(logging.Formatter):
         dt = datetime.fromtimestamp(record.created, tz=UTC)
         iso_timestamp = dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
+        raw_message = record.getMessage()
+        message = redact_text(raw_message)
+
         log_data: dict[str, Any] = {
             "timestamp": iso_timestamp,
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "message": message,
         }
 
         # Correlate run_id: check record attribute first, fall back to contextvar
@@ -61,12 +93,13 @@ class JsonFormatter(logging.Formatter):
         # Append custom extra fields passed in logger calls
         for key, value in record.__dict__.items():
             if key not in STANDARD_LOG_ATTRS and key not in log_data:
+                sanitized = sanitize_log_value(key, value)
                 try:
                     # Test JSON serializability
-                    json.dumps(value)
-                    log_data[key] = value
+                    json.dumps(sanitized)
+                    log_data[key] = sanitized
                 except (TypeError, OverflowError):
-                    log_data[key] = str(value)
+                    log_data[key] = str(sanitized)
 
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)

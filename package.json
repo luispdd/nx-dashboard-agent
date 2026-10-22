@@ -37,7 +37,8 @@
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:build": "docker compose build",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "security:audit": "bun audit; cd apps/agent-service && uvx pip-audit"
   },
   "devDependencies": {
     "@angular-architects/native-federation": "~22.2.2",
@@ -117,6 +118,7 @@
     "@angular/forms": "~22.2.2",
     "@angular/platform-browser": "~22.2.2",
     "@angular/router": "~22.2.2",
+    "@fastify/helmet": "^13.2.0",
     "@fastify/multipart": "^9",
     "@fastify/static": "^10.1.6",
     "@modelcontextprotocol/sdk": "1.32.1",

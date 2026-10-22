@@ -16,6 +16,7 @@ export interface ChatMessage {
   toolCalls?: ToolStep[];
   status?: 'streaming' | 'completed' | 'error';
   timestamp?: string;
+  error?: string;
 }
 
 export interface UseChatStreamOptions {
@@ -154,6 +155,31 @@ export function useChatStream(options: UseChatStreamOptions = {}): UseChatStream
         });
 
         if (!response.ok) {
+          let errorDetail = '';
+          try {
+            const errorJson = await response.json();
+            if (errorJson && typeof errorJson === 'object') {
+              if (typeof errorJson.detail === 'string') {
+                errorDetail = errorJson.detail;
+              } else if (Array.isArray(errorJson.detail)) {
+                errorDetail = errorJson.detail
+                  .map((d: any) => (d && typeof d === 'object' && d.msg ? d.msg : String(d)))
+                  .join('; ');
+              } else if (typeof errorJson.message === 'string') {
+                errorDetail = errorJson.message;
+              }
+            }
+          } catch {
+            try {
+              errorDetail = await response.text();
+            } catch {
+              // fallback to status text
+            }
+          }
+
+          if (errorDetail && errorDetail.trim()) {
+            throw new Error(errorDetail.trim());
+          }
           throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
         }
 
@@ -273,6 +299,7 @@ export function useChatStream(options: UseChatStreamOptions = {}): UseChatStream
                   const updated: ChatMessage = {
                     ...target,
                     status: 'error',
+                    error: errMsg,
                   };
                   const next = [...prev];
                   next[lastIndex] = updated;
@@ -321,7 +348,7 @@ export function useChatStream(options: UseChatStreamOptions = {}): UseChatStream
           if (lastIndex === -1) return prev;
           const target = prev[lastIndex];
           const next = [...prev];
-          next[lastIndex] = { ...target, status: 'error' };
+          next[lastIndex] = { ...target, status: 'error', error: msg };
           return next;
         });
       } finally {

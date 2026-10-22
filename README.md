@@ -53,6 +53,7 @@ All architectural decisions are documented in [`docs/adr/`](docs/adr/README.md):
 - **[OpenAPI as Single Source of Truth (ADR-022)](docs/adr/ADR-022-openapi-contract-first-generated-clients.md):** Zero API drift through contract-first client code generation.
 - **[Stub LLM at E2E Boundary (ADR-025)](docs/adr/ADR-025-stub-llm-at-e2e-boundary.md):** Deterministic, fast CI test runs with full-stack coverage.
 - **[Logs-Only Observability (ADR-026)](docs/adr/ADR-026-logs-only-observability.md):** Structured JSON logging and agent tracing without heavy APM sidecars.
+- **[Local Hardening & Defense-in-Depth (ADR-027)](docs/adr/ADR-027-local-only-threat-model-and-defense-in-depth.md):** Loopback-only binding (`127.0.0.1`), Host/Origin validation, in-process rate limiting, security headers, AES-256-GCM configuration encryption, and secret masking.
 
 ---
 
@@ -102,7 +103,18 @@ bun install
 cd apps/agent-service && uv sync && cd ../..
 ```
 
-### 2. Populate and Transform Data (ETL)
+### 2. Configure Environment
+
+Copy the example environment file and generate a secure encryption key:
+
+```bash
+cp .env.example .env
+
+# Append a generated 32-byte hex key for CONFIG_ENCRYPTION_KEY
+python3 -c "import secrets; print(f'CONFIG_ENCRYPTION_KEY={secrets.token_hex(32)}')" >> .env
+```
+
+### 3. Populate and Transform Data (ETL)
 
 The dashboard visualizes environmental measurements from physical IoT devices (ESP32-C6, Raspberry Pi Pico W). The raw database lives in `data/migrations/source.db`. Run the ETL pipeline to build the derived analytical database:
 
@@ -112,7 +124,7 @@ nx run dashboard-api:etl
 
 > **Note:** Do not run `nx run dashboard-api:seed` unless you explicitly want to overwrite real telemetry with synthetic demo fixtures.
 
-### 3. Generate API Contracts
+### 4. Generate API Contracts
 
 The NestJS API serves as the single source of truth for the frontend:
 
@@ -124,20 +136,20 @@ nx run dashboard-api:export-openapi
 nx run shared-contracts:generate-contracts
 ```
 
-### 4. Run Development Servers
+### 5. Run Development Servers
 
 Start the backend and frontend services in separate terminal sessions:
 
 | Service | Command | Port / URL | Notes |
 |---|---|---|---|
-| **Dashboard API** | `nx serve dashboard-api` | `http://localhost:3000/api` | NestJS REST API & Swagger docs |
-| **Dashboard Shell** | `nx serve dashboard-shell` | `http://localhost:4200` | Angular host (proxies `/api` to port 3000) |
-| **Chat MFE** | `nx serve chat-mfe` | `http://localhost:4204` | React remote loaded via Native Federation |
-| **Agent Service** | `nx serve agent-service` | `http://localhost:8000` | FastAPI service & tool endpoints |
+| **Dashboard API** | `nx serve dashboard-api` | `http://127.0.0.1:3000/api` | NestJS REST API & Swagger docs |
+| **Dashboard Shell** | `nx serve dashboard-shell` | `http://127.0.0.1:4200` | Angular host (proxies `/api` to port 3000) |
+| **Chat MFE** | `nx serve chat-mfe` | `http://127.0.0.1:4204` | React remote loaded via Native Federation |
+| **Agent Service** | `nx serve agent-service` | `http://127.0.0.1:8000` | FastAPI service & tool endpoints |
 
 Open [http://localhost:4200](http://localhost:4200) in your browser to view the dashboard.
 
-> **Tip:** Convenience scripts are configured in `package.json`. You can also run `bun start` (starts API, Shell, and Chat), `bun run serve:shell`, `bun test`, `bun run lint`, `bun run etl`, etc.
+> **Tip:** Convenience scripts are configured in `package.json`. You can also run `bun start` (starts API, Shell, and Chat), `bun run serve:shell`, `bun test`, `bun run lint`, `bun run etl`, `bun run security:audit`, etc.
 
 ---
 

@@ -46,6 +46,14 @@ Commands go through `bunx nx ...` / `bun`. Use the workspace's installed NestJS 
 - **Swagger Exclusion**: Decorate `McpController` with `@ApiExcludeController()` so the MCP route is excluded from OpenAPI exports and generated frontend contracts remain clean.
 - **Shared Constants**: Use `src/app/common/domain-constants.ts` across both REST DTOs and MCP Zod schemas for parity on buckets, range presets, and limits.
 
+## Security & Local Hardening (ADR-027)
+
+- **Loopback Default**: Server binds to `127.0.0.1` (configurable via `API_HOST`). Logs a security warning if bound to a non-loopback interface.
+- **Host & Origin Validation**: `registerHostOriginHook()` validates incoming `Host` against `ALLOWED_HOSTS` (mismatch returns 403) and `Origin` against `ALLOWED_ORIGINS` (foreign origins return 403). Requests without an `Origin` header are allowed.
+- **Security Headers**: Register `@fastify/helmet` with `contentSecurityPolicy: false` to emit `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, and omit `X-Powered-By`.
+- **Constant-Time Comparison**: `McpGuard` validates bearer tokens via `node:crypto.timingSafeEqual`.
+- **Swagger Documentation Toggle**: `SWAGGER_ENABLED` controls whether `/api/docs` is registered (404 when disabled; defaults to disabled in production). Contract export (`export-openapi`) remains functional regardless of this toggle.
+
 ## Testing & Quality
 
 - Strict TypeScript; no `any` without justification.
@@ -53,10 +61,9 @@ Commands go through `bunx nx ...` / `bun`. Use the workspace's installed NestJS 
 - **MCP Architectural Boundary Test**: Enforce zero direct persistence imports in `src/app/mcp/`.
 - **Parity Tests**: Verify equivalent parameters return identical payloads across REST endpoints and MCP tools on seeded databases.
 - **Core Contract Test**: Verify conformance against `docs/contracts/mcp-core-contract.json`.
-- **E2E Tests**: **Playwright** (`apps/dashboard-api/e2e`) against running Fastify test instance.
+- **Security Tests**: Verify headers and origin guards in `security-headers.spec.ts` and `host-origin.hook.spec.ts`.
 - Structured logging; no secrets in logs; request ids if cheap to add.
 - Health endpoint for Docker health checks.
-- Optional MCP token guard (`MCP_AUTH_TOKEN`) and origin guard (`MCP_ALLOWED_ORIGINS`).
 
 ## Checklist
 

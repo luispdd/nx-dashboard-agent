@@ -78,6 +78,7 @@ jobs:
         env:
           E2E_LLM_MODE: stub
           E2E_LLM_STUB_PORT: 8890
+          CONFIG_ENCRYPTION_KEY: e2e-encryption-key-0123456789abcdef0123456789abcdef
         run: bun run e2e
 
       - name: Upload Playwright HTML Report

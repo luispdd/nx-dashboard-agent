@@ -1,14 +1,44 @@
 import hashlib
+import logging
 import os
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_DEV_KEY = "nx-dashboard-agent-dev-secret-key-2026"
 ENCRYPTION_PREFIX = "enc:aes256:"
 
 
+def mask_secret(
+    val: str | None, visible_prefix: int = 3, visible_suffix: int = 4
+) -> str:
+    """Mask a sensitive string, preserving only a short prefix and suffix."""
+    if not val:
+        return ""
+    if len(val) <= visible_prefix + visible_suffix:
+        return "***"
+    return f"{val[:visible_prefix]}...{val[-visible_suffix:]}"
+
+
 def derive_key(secret: str | None = None) -> bytes:
-    key_str = secret or os.getenv("CONFIG_ENCRYPTION_KEY") or DEFAULT_DEV_KEY
+    key_str = secret or os.getenv("CONFIG_ENCRYPTION_KEY")
+    if not key_str:
+        allow_insecure = (
+            os.getenv("ALLOW_INSECURE_DEV_KEY", "").strip().lower() == "true"
+        )
+        if allow_insecure:
+            logger.warning(
+                "⚠️  Security Warning: Using insecure development key for CONFIG_ENCRYPTION_KEY. "
+                "Do not use in production."
+            )
+            key_str = DEFAULT_DEV_KEY
+        else:
+            raise RuntimeError(
+                "CONFIG_ENCRYPTION_KEY is not configured. Set CONFIG_ENCRYPTION_KEY in .env "
+                "or pass ALLOW_INSECURE_DEV_KEY=true for insecure local development."
+            )
+
     return hashlib.sha256(key_str.encode("utf-8")).digest()
 
 

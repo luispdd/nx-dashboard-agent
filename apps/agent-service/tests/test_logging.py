@@ -119,3 +119,31 @@ def test_setup_logging():
     root = logging.getLogger()
     assert len(root.handlers) == 1
     assert isinstance(root.handlers[0].formatter, JsonFormatter)
+
+
+def test_json_formatter_masks_secrets_in_message_and_extras():
+    formatter = JsonFormatter()
+    record = logging.LogRecord(
+        name="test_logger",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=10,
+        msg="Connecting with Bearer supersecrettoken and key sk-1234567890abcdef12345",
+        args=(),
+        exc_info=None,
+    )
+    record.api_key = "sk-very-sensitive-llm-key-here"  # type: ignore[attr-defined]
+    record.mcp_auth_token = "mcp-secret-bearer-token"  # type: ignore[attr-defined]
+    record.normal_param = "public_value"  # type: ignore[attr-defined]
+
+    formatted = formatter.format(record)
+    data = json.loads(formatted)
+
+    assert "supersecrettoken" not in data["message"]
+    assert "Bearer [REDACTED]" in data["message"]
+    assert "sk-1234567890abcdef12345" not in data["message"]
+    assert "sk-...2345" in data["message"]
+    assert data["api_key"] == "sk-...here"
+    assert data["mcp_auth_token"] == "mcp...oken"
+    assert data["normal_param"] == "public_value"
+

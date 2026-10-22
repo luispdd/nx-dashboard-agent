@@ -9,9 +9,9 @@ from agent_service.evals.runner import evaluate_single_case, load_dataset
 
 def test_dataset_integrity() -> None:
     dataset = load_dataset()
-    assert len(dataset) == 20
+    assert len(dataset) == 21
     ids = [d["id"] for d in dataset]
-    assert len(set(ids)) == 20
+    assert len(set(ids)) == 21
 
     categories = {d["category"] for d in dataset}
     assert "factual" in categories

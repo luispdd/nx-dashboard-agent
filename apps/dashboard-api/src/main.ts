@@ -6,6 +6,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import fastifyMultipart from '@fastify/multipart';
+import helmet from '@fastify/helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 import { HttpExceptionFilter } from './app/common/http-exception.filter';
@@ -14,6 +15,13 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter()
+  );
+
+  await app.register(
+    helmet as unknown as Parameters<NestFastifyApplication['register']>[0],
+    {
+      contentSecurityPolicy: false,
+    }
   );
   
   await app.register(
@@ -25,7 +33,24 @@ async function bootstrap() {
     }
   );
 
-  app.enableCors();
+  const { getSecurityConfig } = await import('./app/common/security.config');
+  const { registerHostOriginHook } = await import(
+    './app/common/host-origin.hook'
+  );
+  const securityConfig = getSecurityConfig();
+
+  registerHostOriginHook(app.getHttpAdapter().getInstance());
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || securityConfig.allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin '${origin}' not allowed by CORS`), false);
+      }
+    },
+    credentials: true,
+  });
   
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
@@ -51,7 +76,9 @@ async function bootstrap() {
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
+  if (securityConfig.swaggerEnabled) {
+    SwaggerModule.setup('api/docs', app, swaggerDocument);
+  }
 
   if (process.env.EXPORT_OPENAPI === 'true') {
     const fs = await import('fs');
@@ -71,11 +98,18 @@ async function bootstrap() {
     process.exit(0);
   }
 
-  const port = process.env.PORT || 3000;
-  const host = process.env.HOST || '0.0.0.0';
+  const port = securityConfig.port;
+  const host = securityConfig.host;
+
+  if (!securityConfig.isLoopbackOnly) {
+    Logger.warn(
+      `⚠️  Security Warning: API is binding to non-loopback address '${host}'. This service is exposed to the network.`
+    );
+  }
+
   await app.listen(port, host);
   Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
+    `🚀 Application is running on: http://${host}:${port}/${globalPrefix}`
   );
 }
 

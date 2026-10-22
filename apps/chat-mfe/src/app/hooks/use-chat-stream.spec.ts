@@ -183,4 +183,62 @@ describe('useChatStream', () => {
     expect(result.current.messages).toHaveLength(0);
     expect(result.current.error).toBeNull();
   });
+
+  it('should extract error detail from 429 response body', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ detail: 'Rate limit exceeded. Try again in 60 seconds.' }),
+        { status: 429, statusText: 'Too Many Requests', headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    const { result } = renderHook(() => useChatStream({ apiBaseUrl: 'http://test-agent' }));
+
+    await act(async () => {
+      await result.current.sendMessage('Hello');
+    });
+
+    expect(result.current.error).toBe('Rate limit exceeded. Try again in 60 seconds.');
+    expect(result.current.messages[1].status).toBe('error');
+    expect(result.current.messages[1].error).toBe('Rate limit exceeded. Try again in 60 seconds.');
+    expect(result.current.isStreaming).toBe(false);
+  });
+
+  it('should extract error detail from 413 payload too large response', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ detail: 'Message length (5000 chars) exceeds maximum allowed limit of 4000 chars.' }),
+        { status: 413, statusText: 'Payload Too Large', headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    const { result } = renderHook(() => useChatStream({ apiBaseUrl: 'http://test-agent' }));
+
+    await act(async () => {
+      await result.current.sendMessage('A'.repeat(5000));
+    });
+
+    expect(result.current.error).toBe(
+      'Message length (5000 chars) exceeds maximum allowed limit of 4000 chars.'
+    );
+    expect(result.current.messages[1].status).toBe('error');
+  });
+
+  it('should extract validation details from 422 response body', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ detail: [{ msg: 'Field required' }] }),
+        { status: 422, statusText: 'Unprocessable Entity', headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    const { result } = renderHook(() => useChatStream({ apiBaseUrl: 'http://test-agent' }));
+
+    await act(async () => {
+      await result.current.sendMessage('Hello');
+    });
+
+    expect(result.current.error).toBe('Field required');
+    expect(result.current.messages[1].status).toBe('error');
+  });
 });

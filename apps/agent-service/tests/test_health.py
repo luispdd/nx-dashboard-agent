@@ -73,10 +73,10 @@ def test_cors_allowed_origins(client: TestClient) -> None:
     assert res2.status_code == 200
     assert res2.headers.get("access-control-allow-origin") == "http://localhost:4204"
 
-    # Disallowed origin
+    # Disallowed origin is rejected with 403 Forbidden
     res3 = client.get("/health", headers={"Origin": "http://untrusted-site.com"})
-    assert res3.status_code == 200
-    assert "access-control-allow-origin" not in res3.headers
+    assert res3.status_code == 403
+    assert "Origin 'http://untrusted-site.com' is not allowed" in res3.json()["detail"]
 
 
 def test_cors_preflight(client: TestClient) -> None:
@@ -103,3 +103,29 @@ def test_lifespan_cleans_sessions() -> None:
 
     # After exiting TestClient context, lifespan shutdown ran and cleared sessions
     assert sm.active_session_count() == 0
+
+
+def test_health_does_not_expose_credentials(client: TestClient) -> None:
+    res = client.get("/health")
+    assert res.status_code == 200
+    data = res.json()
+
+    # Ensure no secrets/tokens are present in the health payload
+    forbidden_keys = {
+        "api_key",
+        "llm_api_key",
+        "mcp_auth_token",
+        "token",
+        "secret",
+        "password",
+        "config_encryption_key",
+    }
+    for key in forbidden_keys:
+        assert key not in data
+    # Ensure all string values in health payload do not contain bearer or secret prefixes
+    for val in data.values():
+        if isinstance(val, str):
+            assert "Bearer " not in val
+            assert "sk-" not in val
+            assert "enc:aes256" not in val
+

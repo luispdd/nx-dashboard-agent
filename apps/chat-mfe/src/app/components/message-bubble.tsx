@@ -98,7 +98,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>An error occurred during generation or tool execution.</span>
+            <span>{message.error || 'An error occurred during generation or tool execution.'}</span>
           </div>
         )}
       </div>

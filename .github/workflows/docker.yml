@@ -17,6 +17,7 @@ jobs:
       - name: Prepare environment configuration
         run: |
           cp .env.example .env
+          echo "CONFIG_ENCRYPTION_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env
           echo "UID=$(id -u)" >> $GITHUB_ENV
           echo "GID=$(id -g)" >> $GITHUB_ENV
           echo "UID=$(id -u)" >> .env

@@ -5,6 +5,27 @@ export interface MarkdownContentProps {
   className?: string;
 }
 
+export function isSafeUrl(url: string): boolean {
+  if (!url) return false;
+  const trimmed = url.trim().toLowerCase();
+  if (
+    trimmed.startsWith('javascript:') ||
+    trimmed.startsWith('vbscript:') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('file:')
+  ) {
+    return false;
+  }
+  return (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('mailto:') ||
+    trimmed.startsWith('tel:') ||
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('#')
+  );
+}
+
 /**
  * Parses inline formatting like bold, italic, and inline code spans safely into React nodes.
  */
@@ -13,8 +34,8 @@ export function formatInlineText(text: string): React.ReactNode[] {
   // 1. Code span: `code`
   // 2. Bold: **text**
   // 3. Italic: *text*
-  // 4. Link: [label](url)
-  const pattern = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g;
+  // 4. Link: [label](url) with support for nested parentheses in URLs
+  const pattern = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\((?:[^()]+|\([^()]*\))*\))/g;
   const parts = text.split(pattern);
 
   return parts.map((part, index) => {
@@ -47,12 +68,16 @@ export function formatInlineText(text: string): React.ReactNode[] {
       );
     }
 
-    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    const linkMatch = part.match(/^\[([^\]]+)\]\(((?:[^()]+|\([^()]*\))*)\)$/);
     if (linkMatch) {
+      const href = linkMatch[2].trim();
+      if (!isSafeUrl(href)) {
+        return <span key={index}>{linkMatch[1]}</span>;
+      }
       return (
         <a
           key={index}
-          href={linkMatch[2]}
+          href={href}
           target="_blank"
           rel="noreferrer"
           className="text-accent underline hover:text-accent/80 transition-colors"

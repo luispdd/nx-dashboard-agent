@@ -20,8 +20,11 @@ class SessionState:
 class SessionManager:
     """Manages ephemeral in-memory chat sessions and active task references."""
 
-    def __init__(self, default_ttl_seconds: int = 3600) -> None:
+    def __init__(
+        self, default_ttl_seconds: int = 3600, max_sessions: int = 100
+    ) -> None:
         self.default_ttl_seconds = default_ttl_seconds
+        self.max_sessions = max_sessions
         self._sessions: dict[str, SessionState] = {}
         self._lock = asyncio.Lock()
 
@@ -36,6 +39,13 @@ class SessionManager:
             session = self._sessions[session_id]
             session.touch()
             return session
+
+        # 1. Clean up any expired sessions
+        self.evict_expired()
+
+        # 2. If at capacity, evict the oldest idle session (LRU)
+        if len(self._sessions) >= self.max_sessions:
+            self.evict_oldest_idle()
 
         sid = session_id or str(uuid.uuid4())
         session = SessionState(session_id=sid)
@@ -70,6 +80,20 @@ class SessionManager:
 
         return len(expired_ids)
 
+    def evict_oldest_idle(self) -> str | None:
+        """Evicts the session with the oldest last_accessed_at timestamp."""
+        if not self._sessions:
+            return None
+
+        oldest_id = min(
+            self._sessions.keys(),
+            key=lambda sid: self._sessions[sid].last_accessed_at,
+        )
+        session = self._sessions.pop(oldest_id, None)
+        if session and session.active_task and not session.active_task.done():
+            session.active_task.cancel()
+        return oldest_id
+
     def active_session_count(self) -> int:
         return len(self._sessions)
 
@@ -83,11 +107,24 @@ class SessionManager:
 _global_session_manager: SessionManager | None = None
 
 
-def get_session_manager() -> SessionManager:
+def get_session_manager(
+    default_ttl_seconds: int = 3600,
+    max_sessions: int | None = None,
+) -> SessionManager:
     """Dependency provider returning the singleton SessionManager instance."""
     global _global_session_manager
     if _global_session_manager is None:
-        _global_session_manager = SessionManager()
+        if max_sessions is None:
+            try:
+                from agent_service.config import get_settings
+
+                max_sessions = get_settings().chat_max_sessions
+            except (ImportError, AttributeError, ValueError, RuntimeError):
+                max_sessions = 100
+        _global_session_manager = SessionManager(
+            default_ttl_seconds=default_ttl_seconds,
+            max_sessions=max_sessions,
+        )
     return _global_session_manager
 
 

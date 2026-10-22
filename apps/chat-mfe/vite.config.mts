@@ -11,12 +11,25 @@ function remoteEntryDevPlugin(): Plugin {
     name: 'remote-entry-dev',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
+        const origin = req.headers['origin'];
+        const allowedOrigins = [
+          'http://localhost:4200',
+          'http://127.0.0.1:4200',
+          'http://localhost:4204',
+          'http://127.0.0.1:4204',
+        ];
+        const corsOrigin =
+          typeof origin === 'string' && allowedOrigins.includes(origin)
+            ? origin
+            : 'http://localhost:4200';
+
         const url = req.url?.split('?')[0];
         if (url === '/remoteEntry.js') {
           const distPath = path.resolve(import.meta.dirname, '../../dist/apps/chat-mfe/remoteEntry.js');
           if (fs.existsSync(distPath)) {
             res.setHeader('Content-Type', 'application/javascript');
-            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Origin', corsOrigin);
+            res.setHeader('Vary', 'Origin');
             res.end(fs.readFileSync(distPath));
             return;
           }
@@ -28,7 +41,8 @@ function remoteEntryDevPlugin(): Plugin {
             const ext = path.extname(assetPath);
             const mime = ext === '.css' ? 'text/css' : 'application/javascript';
             res.setHeader('Content-Type', mime);
-            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Origin', corsOrigin);
+            res.setHeader('Vary', 'Origin');
             res.end(fs.readFileSync(assetPath));
             return;
           }
@@ -45,13 +59,27 @@ export default defineConfig(() => ({
   envDir: '../../',
   server: {
     port: 4204,
-    host: 'localhost',
-    cors: true,
+    host: '127.0.0.1',
+    cors: {
+      origin: [
+        'http://localhost:4200',
+        'http://127.0.0.1:4200',
+        'http://localhost:4204',
+        'http://127.0.0.1:4204',
+      ],
+    },
   },
   preview: {
     port: 4204,
-    host: 'localhost',
-    cors: true,
+    host: '127.0.0.1',
+    cors: {
+      origin: [
+        'http://localhost:4200',
+        'http://127.0.0.1:4200',
+        'http://localhost:4204',
+        'http://127.0.0.1:4204',
+      ],
+    },
   },
   plugins: [
     react(),

@@ -37,6 +37,7 @@ Tests prove the spec scenarios. Every OpenSpec scenario maps to at least one aut
 - **Tools:** schema validation (enum rejection), unit presence, "no data" markers, timeout behavior.
 - **UI:** timezone conversion and DST edges, empty/error/loading states, filters updating charts. Test behavior, not implementation details.
 - **MFE integration:** the dashboard context contract (event payload shape and handling in `libs/shared-mfe-context`).
+- **Security & Hardening:** Loopback binding enforcement, Host header mismatch rejection (403), Origin allowlist checks (foreign rejected, missing allowed), in-process rate limiting (429 + Retry-After), payload length limits (413), session eviction (LRU), response security headers via `@fastify/helmet`, and markdown link sanitization (`javascript:` stripped).
 
 ## Rules
 
@@ -49,9 +50,10 @@ Tests prove the spec scenarios. Every OpenSpec scenario maps to at least one aut
 ## Commands
 
 ```bash
-bunx nx affected -t test           # Run Vitest across affected TypeScript projects
-bunx nx test agent-service         # Run pytest via Nx/uv for Python agent
-bunx nx affected -t e2e            # Run Playwright E2E suites
+nx affected -t test                # Run Vitest across affected TypeScript projects
+nx test agent-service              # Run pytest via Nx/uv for Python agent
+nx affected -t e2e                 # Run Playwright E2E suites
+bun run security:audit             # Run dependency vulnerability checks
 ```
 
 ## Checklist
@@ -61,5 +63,6 @@ bunx nx affected -t e2e            # Run Playwright E2E suites
 - [ ] Deterministic, seeded fixtures; no private data
 - [ ] Clean-data negative cases included for detectors
 - [ ] Contracts and generated clients verified
+- [ ] Security controls (headers, origin guards, rate limits, link sanitization) verified
 - [ ] Playwright E2E test added or updated for critical user flows
 - [ ] Eval re-run if prompts, tools or detectors changed

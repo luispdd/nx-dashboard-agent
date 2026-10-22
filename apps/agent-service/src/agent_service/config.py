@@ -68,6 +68,46 @@ class Settings(BaseSettings):
     running_in_docker: bool = False
     log_payloads: bool = False
 
+    # Security & Hardening Configuration
+    agent_host: str = "127.0.0.1"
+    agent_port: int = 8000
+    allowed_origins: str = ""
+    allowed_hosts: str = ""
+    chat_rate_limit_per_minute: int = 20
+    chat_max_concurrent_streams: int = 3
+    chat_max_message_chars: int = 4000
+    chat_max_sessions: int = 100
+    chat_session_ttl_seconds: int = 3600
+    allow_insecure_dev_key: bool = False
+    config_encryption_key: str = ""
+
+    @property
+    def is_loopback_only(self) -> bool:
+        return self.agent_host in ("127.0.0.1", "localhost")
+
+    @property
+    def effective_allowed_origins(self) -> list[str]:
+        if self.allowed_origins.strip():
+            return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        return [
+            "http://localhost:4200",
+            "http://127.0.0.1:4200",
+            "http://localhost:4204",
+            "http://127.0.0.1:4204",
+        ]
+
+    @property
+    def effective_allowed_hosts(self) -> list[str]:
+        if self.allowed_hosts.strip():
+            return [h.strip() for h in self.allowed_hosts.split(",") if h.strip()]
+        return [
+            "localhost",
+            "127.0.0.1",
+            "testserver",
+            f"localhost:{self.agent_port}",
+            f"127.0.0.1:{self.agent_port}",
+        ]
+
     def model_post_init(self, context: Any, /) -> None:
         super().model_post_init(context)
         self.apply_runtime_config()
